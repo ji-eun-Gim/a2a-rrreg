@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A2A Security Dashboard - Agents</title>
+
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <div class="logo">A2A SECURE</div>
+
+        <nav class="main-nav">
+          <a href="../dashboard.html" class="nav-link">Dashboard</a>
+          <a href="agents.html" class="nav-link active">Agents</a>
+          <a href="../logs/logs.html" class="nav-link">Logs</a>
+          <a href="../ruleset/ruleset.html" class="nav-link">Ruleset</a>
+        </nav>
+      </header>
+      
+      <main class="content-area">
+        <section id="agents" class="content-page active">
+          <div class="widget widget-agent-list">
+            <div class="widget-title-row">
+              <h3 class="widget-title">에이전트 리스트 (List)</h3>
+              <button id="add-agent-btn" class="btn btn-primary icon-only" title="에이전트 카드 추가">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+            <div class="agent-list-container" id="agent-list"></div>
+          </div>
+
+          <div class="widget widget-registry-log">
+            <h3 class="widget-title">레지스트리 로그 (추가/삭제)</h3>
+            <ul class="threat-list">
+              <li class="threat-item">
+                Agent 'Orchestrator' added @ Admin (14:30)
+              </li>
+              <li class="threat-item">Agent 'Agent2' added @ Admin (14:31)</li>
+            </ul>
+          </div>
+
+          <div class="widget widget-agent-details">
+            <h3 class="widget-title">선택된 에이전트 세부 정보</h3>
+            <pre id="agent-details-json" class="agent-details-json" aria-live="polite" style="white-space: pre-wrap;">[ 에이전트 리스트 아이템 클릭 시 상세 정보 표시 영역 ]</pre>
+          </div>
+        </section>
+  </main>
+    </div>
+    <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+    <script>
+      (function () {
+        const container = document.getElementById('agent-list');
+        const addBtn = document.getElementById('add-agent-btn');
+        const logList = document.querySelector('.widget-registry-log .threat-list');
+        let counter = document.querySelectorAll('.agent-list-item').length + 1;
+
+        function showToast(msg) {
+          const el = document.getElementById('toast');
+          if (!el) return alert(msg);
+          el.textContent = msg;
+          el.classList.add('show');
+          clearTimeout(showToast._t);
+          showToast._t = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        function addLog(message, ok) {
+          if (!logList) return;
+          const li = document.createElement('li');
+          li.className = 'threat-item ' + (ok ? 'log-success' : 'log-error');
+          const now = new Date();
+          const time = now.toLocaleTimeString('ko-KR', { hour12: false });
+          li.textContent = `${message} (${time})`;
+          // 최신 로그를 위로
+          if (logList.firstChild) logList.prepend(li); else logList.appendChild(li);
+        }
+
+        function createAgentElement(name, card = null) {
+          const item = document.createElement('div');
+          item.className = 'agent-list-item';
+          const strong = document.createElement('strong');
+          strong.textContent = name;
+          item.appendChild(strong);
+          if (card) {
+            try { item.dataset.card = JSON.stringify(card); } catch (e) {}
+          }
+          item.addEventListener('click', () => {
+            let detail = document.getElementById('agent-details-json');
+            if (!detail) return;
+            if (item.dataset.card) {
+              try {
+                const parsed = JSON.parse(item.dataset.card);
+                detail.textContent = JSON.stringify(parsed, null, 2);
+              } catch {
+                detail.textContent = '[카드 정보 파싱 오류]';
+              }
+            } else {
+              detail.textContent = '[이 에이전트는 카드 상세 정보가 없습니다]';
+            }
+          });
+          return item;
+        }
+
+        addBtn?.addEventListener('click', async () => {
+          const token = prompt('관리자 JWT 토큰을 입력하세요:');
+          if (!token) return;
+          try {
+            // 동일 오리진 프록시로 검증하여 CORS 회피
+            const me = await fetch('/api/auth/me', {
+              headers: { Accept: 'application/json', Authorization: 'Bearer ' + token },
+            });
+            const meJson = await me.json().catch(() => ({}));
+            if (!me.ok) {
+              if (me.status === 401) addLog('토큰 검증 실패 (401 Unauthorized)', false);
+              else if (me.status === 502) addLog('토큰 서비스 오류 (502)', false);
+              else addLog(`토큰 검증 실패 (${me.status})`, false);
+              showToast('토큰 검증 실패');
+              return;
+            }
+            if (!meJson?.email || meJson.email !== 'admin@example.com') {
+              addLog('관리자 권한 아님 (403 Forbidden)', false);
+              showToast('토큰 검증 실패');
+              return;
+            }
+
+            const cardInput = prompt('추가할 에이전트 카드를 입력하세요 (JSON 형식):', '{"name":"Agent'+counter+'","description":"","protocolVersion":"1.0","url":"http://localhost:10001","version":"1.0.0","capabilities":{"streaming":true,"pushNotifications":true,"stateTransitionHistory":false}}');
+            if (!cardInput) return;
+            let card;
+            try {
+              card = JSON.parse(cardInput);
+            } catch (e) {
+              showToast('카드 JSON 파싱 실패');
+              addLog('에이전트 카드 파싱 실패', false);
+              return;
+            }
+
+            const res = await fetch('/api/agents', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + token,
+              },
+              body: JSON.stringify(card),
+            });
+            if (!res.ok) {
+              if (res.status === 401) addLog('에이전트 등록 실패 (401 Unauthorized)', false);
+              else if (res.status === 403) addLog('에이전트 등록 실패 (403 Forbidden)', false);
+              else addLog(`에이전트 등록 실패 (${res.status})`, false);
+              showToast('등록 실패');
+              return;
+            }
+            container.appendChild(createAgentElement(card.name, card));
+            counter++;
+            addLog(`Agent '${card.name}' 등록 성공`, true);
+          } catch (e) {
+            showToast('토큰 검증 실패');
+            addLog('토큰 검증 실패 (네트워크 오류)', false);
+          }
+        });
+
+        // 초기 로드: 서버에서 목록을 받아 리스트를 구성
+        async function loadAgents() {
+          try {
+            const res = await fetch('/api/agents');
+            const data = await res.json();
+            container.innerHTML = '';
+            (data.agents || []).forEach(a => {
+              const name = a?.card?.name || a?.name || 'Unknown';
+              const card = a?.card || null;
+              container.appendChild(createAgentElement(name, card));
+            });
+          } catch (e) {
+            // ignore
+          }
+        }
+        loadAgents();
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "reg-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Static server for agents.html and style.css",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "dotenv": "^16.4.5"
+  }
+}

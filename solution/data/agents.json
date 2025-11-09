@@ -1,0 +1,34 @@
+[
+  {
+    "name": "Orchestrator",
+    "status": "Active"
+  },
+  {
+    "name": "Agent1",
+    "status": "Active"
+  },
+  {
+    "name": "Agent2",
+    "status": "Active"
+  },
+  {
+    "name": "Agent3",
+    "status": "Active"
+  },
+  {
+    "name": "Agent4",
+    "status": "Active"
+  },
+  {
+    "name": "Bridge",
+    "status": "Active"
+  },
+  {
+    "name": "Agent5",
+    "status": "Active"
+  },
+  {
+    "name": "Agent6",
+    "status": "Active"
+  }
+]
