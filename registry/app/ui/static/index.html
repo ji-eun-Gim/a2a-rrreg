@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A2A Agent Card Registry</title>
+    <link rel="stylesheet" href="/static/style.css?v=2" />
+  </head>
+  <body>
+    <header>
+      <h1>A2A Agent Card Registry</h1>
+      <div class="actions">
+        <input id="q" placeholder="Search (q)" />
+        <input id="namespace" placeholder="namespace" />
+        <select id="status">
+          <option value="">전체</option>
+          <option value="active">활동</option>
+          <option value="inactive">비활동</option>
+          <option value="unapproved">미승인</option>
+        </select>
+        <button id="searchBtn">Search</button>
+        <button id="createBtn">Register</button>
+        <a href="javascript:void(0)" class="bell notify" id="js-bell" title="Notifications" aria-label="Notifications">
+          🔔<span id="js-alarmCnt" class="cnt hidden">0</span>
+        </a>
+      </div>
+    </header>
+    <main>
+      <div id="cards" class="cards-grid"></div>
+    </main>
+
+    <div id="modal" class="modal hidden">
+      <div class="modal-body">
+        <h3>Register Agent</h3>
+        <textarea id="cardText" placeholder="Paste agent-card JSON here" rows="12"></textarea>
+        <div class="row">
+          <button id="submitBtn">Create</button>
+          <button id="closeBtn">Close</button>
+        </div>
+        <pre id="result"></pre>
+      </div>
+    </div>
+
+    <!-- 상세 보기 모달: View 클릭 시 표시, Retire/Force 버튼 포함 -->
+    <div id="detailModal" class="modal hidden">
+      <div class="modal-body">
+        <h3 id="detailTitle">Agent Detail</h3>
+        <div class="row">
+          <button id="detailForceBtn" style="color:#b00020">Force Delete</button>
+          <button id="detailCloseBtn">Close</button>
+        </div>
+        <h4>Card</h4>
+        <pre id="detailCard"></pre>
+        <h4>Logs (v3 recent)</h4>
+        <pre id="detailAudit"></pre>
+      </div>
+    </div>
+
+    <!-- 알림 모달 -->
+    <div id="notifyModal" class="modal hidden">
+      <div class="modal-body">
+        <h3>알림</h3>
+        <div id="notifyList" style="display:flex;flex-direction:column;gap:8px"></div>
+        <div class="row">
+          <button id="notifyCloseBtn">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/main.js?v=2"></script>
+  </body>
+  </html>

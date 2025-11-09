@@ -1,0 +1,10 @@
+{
+  "name": "a2a-registry-webui",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "rm -rf ../app/ui/static && mkdir -p ../app/ui/static && cp -r public/* ../app/ui/static/"
+  },
+  "devDependencies": {}
+}
+

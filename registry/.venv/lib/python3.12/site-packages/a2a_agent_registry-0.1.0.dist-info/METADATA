@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: a2a-agent-registry
+Version: 0.1.0
+Summary: A2A Agent Card Registry server
+Requires-Python: >=3.11
+Requires-Dist: flask>=2.3
+Requires-Dist: redis>=5.0
+Requires-Dist: flask-limiter>=3.5
+Requires-Dist: ulid-py>=1.1
+Requires-Dist: jsonschema>=4.21
+Requires-Dist: requests>=2.31
+Requires-Dist: gunicorn>=21.2
+Provides-Extra: dev
+Requires-Dist: pytest>=7.4; extra == "dev"
+Requires-Dist: fakeredis>=2.21; extra == "dev"
+Requires-Dist: black>=24.3.0; extra == "dev"
+Requires-Dist: ruff>=0.3.0; extra == "dev"

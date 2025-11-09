@@ -1,0 +1,13 @@
+flask>=2.3
+redis>=5.0
+flask-limiter>=3.5
+ulid-py>=1.1
+jsonschema>=4.21
+requests>=2.31
+gunicorn>=21.2
+
+[dev]
+pytest>=7.4
+fakeredis>=2.21
+black>=24.3.0
+ruff>=0.3.0
