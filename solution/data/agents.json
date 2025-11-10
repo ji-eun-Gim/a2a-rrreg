@@ -1,34 +1,47 @@
 [
   {
-    "name": "Orchestrator",
+    "card": {
+      "name": "Agent1",
+      "description": "",
+      "protocolVersion": "1.0",
+      "url": "http://localhost:10001",
+      "version": "1.0.0",
+      "capabilities": {
+        "streaming": true,
+        "pushNotifications": true,
+        "stateTransitionHistory": false
+      }
+    },
     "status": "Active"
   },
   {
-    "name": "Agent1",
+    "card": {
+      "name": "Agent2",
+      "description": "",
+      "protocolVersion": "1.0",
+      "url": "http://localhost:10001",
+      "version": "1.0.0",
+      "capabilities": {
+        "streaming": true,
+        "pushNotifications": true,
+        "stateTransitionHistory": false
+      }
+    },
     "status": "Active"
   },
   {
-    "name": "Agent2",
-    "status": "Active"
-  },
-  {
-    "name": "Agent3",
-    "status": "Active"
-  },
-  {
-    "name": "Agent4",
-    "status": "Active"
-  },
-  {
-    "name": "Bridge",
-    "status": "Active"
-  },
-  {
-    "name": "Agent5",
-    "status": "Active"
-  },
-  {
-    "name": "Agent6",
+    "card": {
+      "name": "Agent3",
+      "description": "",
+      "protocolVersion": "1.0",
+      "url": "http://localhost:10001",
+      "version": "1.0.0",
+      "capabilities": {
+        "streaming": true,
+        "pushNotifications": true,
+        "stateTransitionHistory": false
+      }
+    },
     "status": "Active"
   }
 ]

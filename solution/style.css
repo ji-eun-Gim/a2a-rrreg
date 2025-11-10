@@ -235,7 +235,7 @@ body {
   justify-content: flex-start;
   align-items: center;
   padding: 1rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid #39ff14; /* 형광 초록 테두리 */
   border-radius: 5px;
   background-color: var(--bg-dark-primary);
   cursor: pointer;
@@ -250,6 +250,9 @@ body {
   font-size: 1.1rem;
   color: var(--text-primary);
 }
+
+/* Active 상태 포인트: 테두리 초록색 강조 */
+/* 상태별 강조 스타일 제거 (초기 디자인로 복구) */
 
 /* 에이전트 상세 JSON 영역 */
 .agent-details-json {
@@ -295,4 +298,65 @@ body {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* === 모달 & 대형 입력 === */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+}
+.modal.show { display: flex; }
+.modal-dialog {
+  width: 86vw;
+  max-width: 1000px;
+  max-height: 80vh;
+  overflow: auto;
+  background: var(--bg-dark-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  padding: 1.25rem;
+}
+.modal-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+.form-field { margin-bottom: 0.85rem; }
+.form-field label {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+.form-input,
+.form-textarea {
+  width: 100%;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-dark-primary);
+  color: var(--text-primary);
+  padding: 0.6rem 0.7rem;
+  font-size: 0.95rem;
+}
+.form-textarea {
+  /* 내부 스크롤 제거, 내용에 맞게 자동 확장 */
+  height: auto;
+  min-height: 400px; /* 기본 높이 400으로 축소 */
+  max-height: 70vh; /* 화면 대비 최대 높이 제한 */
+  overflow-y: hidden; /* 세로 스크롤 숨김 */
+  resize: none; /* 수동 리사이즈 비활성화 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
 }

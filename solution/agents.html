@@ -53,7 +53,20 @@
         </section>
   </main>
     </div>
-    <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+    <!-- 에이전트 카드 입력 모달 -->
+    <div id="agent-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="agent-modal-title">
+      <div class="modal-dialog">
+        <h3 id="agent-modal-title" class="modal-title">에이전트 카드 등록</h3>
+        <div class="form-field">
+          <label for="card-textarea">에이전트 카드 (JSON)</label>
+          <textarea id="card-textarea" class="form-textarea" spellcheck="false" placeholder='{"name":"Agent1",...}' style="height: 400px;"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-modal" class="btn">취소</button>
+          <button id="submit-modal" class="btn btn-primary">등록</button>
+        </div>
+      </div>
+    </div>
     <script>
       (function () {
         const container = document.getElementById('agent-list');
@@ -61,14 +74,47 @@
         const logList = document.querySelector('.widget-registry-log .threat-list');
         let counter = document.querySelectorAll('.agent-list-item').length + 1;
 
-        function showToast(msg) {
-          const el = document.getElementById('toast');
-          if (!el) return alert(msg);
-          el.textContent = msg;
-          el.classList.add('show');
-          clearTimeout(showToast._t);
-          showToast._t = setTimeout(() => el.classList.remove('show'), 2500);
+        // 토스트 알림 기능 제거됨
+
+        // 모달 엘리먼트 참조
+        const modal = document.getElementById('agent-modal');
+        const cardTextarea = document.getElementById('card-textarea');
+        const cancelBtn = document.getElementById('cancel-modal');
+        const submitBtn = document.getElementById('submit-modal');
+        let currentAdminToken = null;
+
+        function openModal() {
+          if (!modal) return;
+          const sample = {
+            name: `Agent${counter}`,
+            description: '',
+            protocolVersion: '1.0',
+            url: 'http://localhost:10001',
+            version: '1.0.0',
+            capabilities: { streaming: true, pushNotifications: true, stateTransitionHistory: false }
+          };
+          cardTextarea.value = JSON.stringify(sample, null, 2);
+          modal.classList.add('show');
+          setTimeout(() => {
+            cardTextarea.focus();
+            // 초기 높이는 400px 유지 (입력 시 자동 확대)
+          }, 0);
         }
+
+        function closeModal() {
+          modal?.classList.remove('show');
+        }
+
+        // textarea 자동 높이 조절 (세로 스크롤 제거)
+        function autoResizeTA() {
+          if (!cardTextarea) return;
+          cardTextarea.style.height = 'auto';
+          const max = Math.floor(window.innerHeight * 0.7);
+          const next = Math.min(cardTextarea.scrollHeight, max);
+          cardTextarea.style.height = next + 'px';
+        }
+        cardTextarea?.addEventListener('input', autoResizeTA);
+        window.addEventListener('resize', autoResizeTA);
 
         function addLog(message, ok) {
           if (!logList) return;
@@ -109,9 +155,8 @@
 
         addBtn?.addEventListener('click', async () => {
           const token = prompt('관리자 JWT 토큰을 입력하세요:');
-          if (!token) return;
+          if (!token) return; // 취소 또는 미입력
           try {
-            // 동일 오리진 프록시로 검증하여 CORS 회피
             const me = await fetch('/api/auth/me', {
               headers: { Accept: 'application/json', Authorization: 'Bearer ' + token },
             });
@@ -120,26 +165,38 @@
               if (me.status === 401) addLog('토큰 검증 실패 (401 Unauthorized)', false);
               else if (me.status === 502) addLog('토큰 서비스 오류 (502)', false);
               else addLog(`토큰 검증 실패 (${me.status})`, false);
-              showToast('토큰 검증 실패');
               return;
             }
             if (!meJson?.email || meJson.email !== 'admin@example.com') {
               addLog('관리자 권한 아님 (403 Forbidden)', false);
-              showToast('토큰 검증 실패');
               return;
             }
+            currentAdminToken = token;
+            openModal();
+          } catch (e) {
+            addLog('토큰 검증 실패 (네트워크 오류)', false);
+          }
+        });
 
-            const cardInput = prompt('추가할 에이전트 카드를 입력하세요 (JSON 형식):', '{"name":"Agent'+counter+'","description":"","protocolVersion":"1.0","url":"http://localhost:10001","version":"1.0.0","capabilities":{"streaming":true,"pushNotifications":true,"stateTransitionHistory":false}}');
-            if (!cardInput) return;
-            let card;
-            try {
-              card = JSON.parse(cardInput);
-            } catch (e) {
-              showToast('카드 JSON 파싱 실패');
-              addLog('에이전트 카드 파싱 실패', false);
-              return;
-            }
+        cancelBtn?.addEventListener('click', () => closeModal());
+        modal?.addEventListener('click', (e) => {
+          if (e.target === modal) closeModal();
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') closeModal();
+        });
 
+        submitBtn?.addEventListener('click', async () => {
+          const token = currentAdminToken;
+          if (!token) { addLog('토큰 검증 필요', false); return; }
+          let card;
+          try {
+            card = JSON.parse(cardTextarea.value);
+          } catch (e) {
+            addLog('에이전트 카드 파싱 실패', false);
+            return;
+          }
+          try {
             const res = await fetch('/api/agents', {
               method: 'POST',
               headers: {
@@ -152,14 +209,14 @@
               if (res.status === 401) addLog('에이전트 등록 실패 (401 Unauthorized)', false);
               else if (res.status === 403) addLog('에이전트 등록 실패 (403 Forbidden)', false);
               else addLog(`에이전트 등록 실패 (${res.status})`, false);
-              showToast('등록 실패');
               return;
             }
             container.appendChild(createAgentElement(card.name, card));
             counter++;
             addLog(`Agent '${card.name}' 등록 성공`, true);
+            closeModal();
+            currentAdminToken = null; // 등록 완료 후 토큰 해제
           } catch (e) {
-            showToast('토큰 검증 실패');
             addLog('토큰 검증 실패 (네트워크 오류)', false);
           }
         });
