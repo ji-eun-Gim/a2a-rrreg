@@ -1,0 +1,746 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A2A Security Dashboard - Dashboard</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      /* ========================================
+         Agent Interaction Map ?ㅽ???
+         ======================================== */
+
+      /* :root 蹂??(?먮낯 ?뚯씪 湲곗?) 
+      - style.css???대? ?덈떎硫???遺遺꾩? ?앸왂?섍굅??留욊쾶 ?섏젙?섏꽭?? 
+      */
+      :root {
+        --bg: #0b0f14;
+        --fg: #e7ecf2;
+        --muted: #aab5c0;
+        --primary: #6dd3ff;
+        --kinic: #4ef6b2;
+        --edge: #66aaff;
+        --card-bg: rgba(255, 255, 255, 0.07);
+        --ring: rgba(255, 255, 255, 0.18);
+        --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        --text-secondary: var(--muted); /* ??쒕낫???명솚??*/
+      }
+
+      /* ?꾩젽 而⑦뀒?대꼫 ?ㅼ젙 */
+      .widget-agent-graph {
+        position: relative; /* ?먯떇 ?붿냼??position:absolute 湲곗???*/
+        overflow: hidden; /* ?꾩젽 諛뽰쑝濡??섍?吏 ?딅룄濡?*/
+        min-height: 500px;
+        z-index: 0;
+      }
+
+      /* SVG 洹몃옒???곸뿭 */
+      #graph {
+        position: absolute;
+        top: 60px; /* 移대뱶 ?덉씠?댁? ?숈씪?섍쾶 */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: calc(100% - 50px); /* ?믪씠 議곗젙 */
+        overflow: hidden; /* ?좊룄 ?섎━?꾨줉 */
+        z-index: 1;
+      }
+
+      /* HTML 移대뱶 ?덉씠??*/
+      #cardsLayer {
+        position: absolute;
+        top: 60px; /* ?꾩젽 ??댄? ?꾨옒遺???쒖옉 */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden; /* ???곸뿭???섏쑝硫??섎┝ */
+        z-index: 2;
+      }
+
+      /* ?먯씠?꾪듃 移대뱶 湲곕낯 ?ㅽ???*/
+      .agent-card {
+        position: absolute;
+        width: 200px; /* 220px -> 200px */
+        pointer-events: auto; /* 移대뱶 ?먯껜???대┃/?쒕옒洹?媛??*/
+        background: var(--card-bg, rgba(255, 255, 255, 0.07));
+        border: 1px solid var(--ring, rgba(255, 255, 255, 0.18));
+        box-shadow: var(--shadow, 0 10px 30px rgba(0, 0, 0, 0.35));
+        backdrop-filter: blur(14px) saturate(120%);
+        border-radius: 14px; /* 16px -> 14px */
+        padding: 10px; /* 12px -> 10px */
+        color: var(--fg); /* ??쒕낫???띿뒪???됱긽 ?곸냽 */
+      }
+
+      .agent-card:hover {
+        transform: translateY(
+          -2px
+        ); /* JS?먯꽌 translate()瑜??ъ슜?섎?濡???뼱?????덉쓬 */
+      }
+
+      /* 移대뱶 ?ㅻ뜑 諛??꾨컮? */
+      .agent-header {
+        display: flex;
+        align-items: center;
+        gap: 8px; /* 10px -> 8px */
+        margin-bottom: 6px; /* 8px -> 6px */
+      }
+      .agent-avatar {
+        width: 32px; /* 36px -> 32px */
+        height: 32px; /* 36px -> 32px */
+        border-radius: 10px; /* 12px -> 10px */
+        display: grid;
+        place-items: center;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.35),
+          rgba(255, 255, 255, 0.1)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.18);
+      }
+      .agent-avatar .dot {
+        width: 7px; /* 8px -> 7px */
+        height: 7px; /* 8px -> 7px */
+        border-radius: 50%;
+        background: var(--kinic, #4ef6b2);
+        box-shadow: 0 0 10px var(--kinic, #4ef6b2); /* 12px -> 10px */
+      }
+      .agent-title {
+        display: flex;
+        flex-direction: column;
+      }
+      .agent-title .name {
+        font-weight: 700;
+        letter-spacing: 0.3px;
+      }
+      .agent-title .role {
+        font-size: 11px; /* 12px -> 11px */
+        color: var(--text-secondary, var(--muted, #aab5c0));
+      }
+
+      /* 移대뱶 吏??*/
+      .agent-metrics {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px; /* 6px -> 4px */
+        margin-top: 6px; /* 8px -> 6px */
+      }
+      .metric {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 8px; /* 10px -> 8px */
+        padding: 6px; /* 8px -> 6px */
+      }
+      .metric .label {
+        font-size: 10px; /* 11px -> 10px */
+        color: var(--text-secondary, var(--muted, #aab5c0));
+      }
+      .metric .value {
+        font-size: 13px; /* 14px -> 13px */
+        font-weight: 700;
+      }
+
+      /* ?먯씠?꾪듃 ?좏삎蹂??됱긽 */
+      /* Kinic */
+      .agent-card.kinic {
+        background: linear-gradient(
+          135deg,
+          rgba(78, 246, 178, 0.15),
+          rgba(109, 211, 255, 0.1)
+        );
+        border: 1px solid rgba(78, 246, 178, 0.65);
+      }
+      .agent-card.kinic .agent-avatar {
+        background: linear-gradient(135deg, #4ef6b2, #6dd3ff);
+      }
+      .agent-card.kinic .agent-avatar .dot {
+        background: white;
+      }
+      .agent-card.kinic .metric {
+        background: rgba(78, 246, 178, 0.08);
+        border: 1px solid rgba(78, 246, 178, 0.25);
+      }
+      .agent-card.kinic .metric .value {
+        color: #4ef6b2;
+      }
+
+      /* Planner */
+      .agent-card.planner .agent-avatar {
+        background: linear-gradient(135deg, #6dd3ff, #a48fff);
+      }
+      .agent-card.planner .agent-avatar .dot {
+        background: #6dd3ff;
+      }
+
+      /* Researcher */
+      .agent-card.researcher .agent-avatar {
+        background: linear-gradient(135deg, #a48fff, #ff8fa4);
+      }
+      .agent-card.researcher .agent-avatar .dot {
+        background: #a48fff;
+      }
+
+      /* Reviewer */
+      .agent-card.reviewer .agent-avatar {
+        background: linear-gradient(135deg, #ffb86c, #ff8fa4);
+      }
+      .agent-card.reviewer .agent-avatar .dot {
+        background: #ffb86c;
+      }
+
+      /* Toolsmith */
+      .agent-card.toolsmith .agent-avatar {
+        background: linear-gradient(135deg, #8fa4ff, #b28fff);
+      }
+      .agent-card.toolsmith .agent-avatar .dot {
+        background: #8fa4ff;
+      }
+
+      /* Concierge */
+      .agent-card.concierge .agent-avatar {
+        background: linear-gradient(135deg, #ffd36d, #ffa46d);
+      }
+      .agent-card.concierge .agent-avatar .dot {
+        background: #ffd36d;
+      }
+
+      /* SVG ?ｌ?(?? ?ㅽ???*/
+      .edge {
+        stroke: var(--edge, #66aaff);
+        stroke-opacity: 0.66;
+        stroke-width: 2px;
+        fill: none;
+        marker-end: url(#arrow);
+      }
+      .edge-label {
+        font-size: 11px; /* 12px -> 11px */
+        fill: var(--text-secondary, var(--muted, #aab5c0));
+        user-select: none;
+        transform: translateY(-6px);
+      }
+      .edge-arrow {
+        fill: var(--edge, #66aaff);
+        opacity: 0.9;
+      }
+      .pulse {
+        fill: white;
+        opacity: 0.9;
+        filter: drop-shadow(0 0 8px white);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <div class="logo">A2A SECURE</div>
+        <nav class="main-nav">
+          <a href="/" class="nav-link active">Dashboard</a>
+          <a href="/agents" class="nav-link">Agents</a>
+          <a href="/logs" class="nav-link">Logs</a>
+          <a href="/ruleset" class="nav-link">Ruleset</a>
+        </nav>
+      </header>
+
+      <main class="content-area">
+        <section id="dashboard" class="content-page active">
+          <div class="widget widget-agent-graph">
+            <h3 class="widget-title">Agent Interaction Map</h3>
+
+            <svg id="graph" aria-hidden="true">
+              <defs>
+                <marker
+                  id="arrow"
+                  viewBox="0 0 10 10"
+                  refX="10"
+                  refY="5"
+                  markerUnits="strokeWidth"
+                  markerWidth="8"
+                  markerHeight="6"
+                  orient="auto"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" class="edge-arrow"></path>
+                </marker>
+              </defs>
+              <g id="zoomRoot">
+                <g id="edgesLayer"></g>
+                <g id="pulsesLayer"></g>
+              </g>
+            </svg>
+            <div id="cardsLayer" aria-live="polite"></div>
+          </div>
+          <div class="widget widget-traffic-stats">
+            <h3 class="widget-title">?몃옒???듦퀎</h3>
+            <div style="color: var(--text-secondary)">
+              [ ?몃옒??諛?李⑦듃 ?쒖떆 ?곸뿭 ]
+            </div>
+          </div>
+          <div class="widget widget-threat-feed">
+            <h3 class="widget-title">?ㅼ떆媛??꾪삊 ?먯? ?꾪솴</h3>
+            <ul class="threat-list">
+              <li class="threat-item critical">
+                Agent 'Orchestrator' Task Replay Attack (20:25)
+              </li>
+              <li class="threat-item warning">
+                Agent 'Bridge' Unusual Data Access (20:23)
+              </li>
+              <li class="threat-item critical">
+                Agent 'Agent2' Card Spoofing (20:21)
+              </li>
+            </ul>
+          </div>
+          <div class="widget widget-risk-score">
+            <h3 class="widget-title">Risk Assessment Score</h3>
+            <div class="risk-score-display">8.7/10</div>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // 1. ?꾩닔 DOM ?붿냼 ?좏깮
+        const svg = document.querySelector("#graph");
+        const zoomRoot = document.querySelector("#zoomRoot"); // SVG 洹몃９
+        const edgesLayer = document.querySelector("#edgesLayer");
+        const pulsesLayer = document.querySelector("#pulsesLayer");
+        const cardsLayer = document.querySelector("#cardsLayer");
+        const widget = document.querySelector(".widget-agent-graph");
+
+        // 2. 洹몃옒???곗씠??諛??곹깭
+        let running = true; // ?좊땲硫붿씠???ㅽ뻾 ?곹깭
+        const graph = {
+          nodes: [
+            // 臾쇰━ ?붿쭊???꾪빐 vx(x?띾룄), vy(y?띾룄), fx(怨좎젙x), fy(怨좎젙y) 異붽?
+            {
+              id: "kinic",
+              name: "Orchestrator",
+              role: "Orchestrator Agent",
+              kind: "kinic",
+              vx: 0,
+              vy: 0,
+              fx: null,
+              fy: null,
+            },
+            {
+              id: "planner",
+              name: "Agent1",
+              role: "Orchestrator Agent",
+              kind: "planner",
+              vx: 0,
+              vy: 0,
+              fx: null,
+              fy: null,
+            },
+            {
+              id: "researcher",
+              name: "Agent2",
+              role: "Web + RAG",
+              kind: "researcher",
+              vx: 0,
+              vy: 0,
+              fx: null,
+              fy: null,
+            },
+            {
+              id: "reviewer",
+              name: "Agent3",
+              role: "Critic",
+              kind: "reviewer",
+              vx: 0,
+              vy: 0,
+              fx: null,
+              fy: null,
+            },
+            {
+              id: "toolsmith",
+              name: "Agent4",
+              role: "MCP Tools",
+              kind: "toolsmith",
+              vx: 0,
+              vy: 0,
+              fx: null,
+              fy: null,
+            },
+            {
+              id: "concierge",
+              name: "Bridge",
+              role: "A2A Client",
+              kind: "concierge",
+              vx: 0,
+              vy: 0,
+              fx: null,
+              fy: null,
+            },
+          ],
+          links: [
+            // Kinic to All
+            { source: "kinic", target: "planner" },
+            { source: "kinic", target: "researcher" },
+            { source: "kinic", target: "reviewer" },
+            { source: "kinic", target: "toolsmith" },
+            { source: "kinic", target: "concierge" },
+
+            // Planner to All (Kinic ?쒖쇅)
+            { source: "planner", target: "researcher" },
+            { source: "planner", target: "reviewer" },
+            { source: "planner", target: "toolsmith" },
+            { source: "planner", target: "concierge" },
+
+            // Researcher to All (Kinic, Planner ?쒖쇅)
+            { source: "researcher", target: "reviewer" },
+            { source: "researcher", target: "toolsmith" },
+            { source: "researcher", target: "concierge" },
+
+            // Reviewer to All
+            { source: "reviewer", target: "toolsmith" },
+            { source: "reviewer", target: "concierge" },
+
+            // Toolsmith to All
+            { source: "toolsmith", target: "concierge" },
+          ],
+        };
+
+        // 3. 臾쇰━ ?붿쭊 (?먮낯 ?뚯씪??'physics' 媛앹껜)
+        const physics = {
+          linkDist(l) {
+            // Kinic(以묒븰)怨쇱쓽 嫄곕━瑜???媛源앷쾶
+            return l.source === "kinic" || l.target === "kinic" ? 380 : 420; // 450/500 -> 380/420
+          },
+          step(dt) {
+            const nodes = graph.nodes,
+              links = graph.links;
+            const kLink = 0.0018,
+              kCharge = 7000, // 8000 -> 7000 (諛섎컻??媛먯냼)
+              kCenter = 0.01,
+              damp = 0.9,
+              radius = 230; // 260 -> 230 (異⑸룎 諛섍꼍 媛먯냼)
+
+            // 留곹겕(?ㅽ봽留? ?λ젰 怨꾩궛
+            for (const l of links) {
+              const a = graph.nodes.find((n) => n.id === l.source);
+              const b = graph.nodes.find((n) => n.id === l.target);
+              if (!a || !b) continue;
+
+              let dx = b.x - a.x,
+                dy = b.y - a.y,
+                dist = Math.hypot(dx, dy) || 0.001;
+              const d0 = this.linkDist(l),
+                f = kLink * (dist - d0);
+              dx /= dist;
+              dy /= dist;
+              const fx = f * dx,
+                fy = f * dy;
+              a.vx += fx;
+              a.vy += fy;
+              b.vx -= fx;
+              b.vy -= fy;
+            }
+
+            // ?몃뱶 媛?泥숇젰(諛섎컻?? 怨꾩궛
+            for (let i = 0; i < nodes.length; i++) {
+              for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i],
+                  b = nodes[j];
+                let dx = b.x - a.x,
+                  dy = b.y - a.y,
+                  d2 = dx * dx + dy * dy + 0.01,
+                  d = Math.sqrt(d2);
+                const f = kCharge / d2,
+                  fx = (f * dx) / d,
+                  fy = (f * dy) / d;
+                a.vx -= fx;
+                a.vy -= fy;
+                b.vx += fx;
+                b.vy += fy;
+                if (d < radius) {
+                  // 異⑸룎 諛⑹?
+                  const push = (radius - d) * 0.02,
+                    px = (push * dx) / d,
+                    py = (push * dy) / d;
+                  a.vx -= px;
+                  a.vy -= py;
+                  b.vx += px;
+                  b.vy += py;
+                }
+              }
+            }
+
+            // 以묒븰?쇰줈 ?밴린????+ ?띾룄 ?곸슜
+            const rect = widget.getBoundingClientRect();
+            const cx = (rect.width || 300) / 2; // ?꾩젽 以묒븰
+            const cy = (rect.height || 300) / 2;
+
+            for (const p of nodes) {
+              if (p.fx != null && p.fy != null) {
+                // ?쒕옒洹?以?fx, fy媛 怨좎젙??
+                p.vx += (p.fx - p.x) * 0.06;
+                p.vy += (p.fy - p.y) * 0.06;
+              } else {
+                // ?먯쑀 ?곹깭 (以묒븰?쇰줈 ?밴린湲?
+                p.vx += (cx - p.x) * kCenter;
+                p.vy += (cy - p.y) * kCenter;
+              }
+              p.vx *= damp; // ?띾룄 媛먯뇿
+              p.vy *= damp;
+              p.x += p.vx * dt; // ?꾩튂 ?낅뜲?댄듃
+              p.y += p.vy * dt;
+            }
+          },
+        };
+
+        // 4. ?뚮뜑留?諛??대깽???몃뱾??
+
+        /**
+         * 留??꾨젅?꾨쭏??DOM???낅뜲?댄듃?⑸땲??
+         */
+        function draw() {
+          // A. ?몃뱶(移대뱶) ?꾩튂 ?낅뜲?댄듃
+          graph.nodes.forEach((n) => {
+            const card = cardsLayer.querySelector(
+              `.agent-card[data-id="${n.id}"]`
+            );
+            if (card) {
+              const x = n.x - 100; // 110 -> 100 (移대뱶 ?덈퉬 200px???덈컲)
+              const y = n.y - 50; // 60 -> 50 (以꾩뼱??移대뱶 ?믪씠???덈컲)
+              // ?λ뫁 ?좊떎?덈뒗 ?먮굦???꾪빐 will-change ???吏곸젒 transform ?ㅼ젙
+              card.style.transform = `translate(${x}px, ${y}px)`;
+            }
+          });
+
+          // B. ?ｌ?(?? ?꾩튂 ?낅뜲?댄듃
+          graph.links.forEach((l) => {
+            const a = graph.nodes.find((n) => n.id === l.source);
+            const b = graph.nodes.find((n) => n.id === l.target);
+            if (!a || !b) return;
+
+            const id = `${l.source}->${l.target}`; // ID瑜?吏곸젒 ?앹꽦?⑸땲??
+            const path = edgesLayer.querySelector(
+              `path[data-edge-id="${id}"]` // ?앹꽦??ID濡?李얠뒿?덈떎
+            );
+            if (path) path.setAttribute("d", `M${a.x},${a.y} L${b.x},${b.y}`);
+
+            const label = edgesLayer.querySelector(
+              `text[data-edge-label-id="lbl-${id}"]`
+            );
+            if (label) {
+              label.setAttribute("x", (a.x + b.x) / 2);
+              label.setAttribute("y", (a.y + b.y) / 2);
+            }
+          });
+
+          // SVG 以???(?꾩옱??1:1)
+          zoomRoot.setAttribute("transform", "translate(0,0) scale(1)");
+        }
+
+        /**
+         * ?꾩뒪(?? ?좊땲硫붿씠?섏쓣 ?앹꽦?⑸땲??
+         */
+        function pulse(srcId, tgtId, kind = "msg", lat = 160) {
+          const l = graph.links.find(
+            (l) => l.source === srcId && l.target === tgtId
+          );
+          if (!l) return;
+
+          // *?섏젙*: 留곹겕 ID媛 ?곗씠?곗뿉 ?놁쑝誘濡?吏곸젒 ?앹꽦?댁꽌 path瑜?李얠븘???⑸땲??
+          const edgeId = `${l.source}->${l.target}`;
+          const p = edgesLayer.querySelector(`path[data-edge-id="${edgeId}"]`);
+
+          if (!p || p.getTotalLength() === 0) return; // ?좎씠 洹몃젮吏吏 ?딆븯?쇰㈃ 以묐떒
+
+          const total = p.getTotalLength();
+          const dot = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle"
+          );
+          dot.setAttribute("class", "pulse");
+          dot.setAttribute("r", "4");
+
+          const color =
+            kind === "task"
+              ? "#a48fff"
+              : kind === "artifact"
+              ? "#4ef6b2"
+              : "#6dd3ff";
+          dot.style.fill = color;
+          dot.style.filter = `drop-shadow(0 0 10px ${color})`;
+          pulsesLayer.appendChild(dot);
+
+          const start = performance.now();
+          function step(now) {
+            const t = Math.min(1, (now - start) / Math.max(80, lat * 2));
+            const pt = p.getPointAtLength(t * total);
+            dot.setAttribute("cx", pt.x);
+            dot.setAttribute("cy", pt.y);
+
+            if (t < 1 && running) {
+              // 'running' ?곹깭 泥댄겕
+              requestAnimationFrame(step);
+            } else {
+              dot.remove();
+            }
+          }
+          requestAnimationFrame(step);
+        }
+
+        /**
+         * ?곕え A2A ?대깽?몃? 泥섎━?⑸땲??
+         */
+        function onA2A(evt) {
+          const {
+            type = "msg",
+            source,
+            target,
+            latencyMs = Math.random() * 200 + 40,
+          } = evt;
+          if (!source || !target) return;
+          pulse(source, target, type, latencyMs);
+        }
+
+        /**
+         * HTML 移대뱶瑜?DOM??留덉슫?명븯怨?臾쇰━ ?쒕옒洹??대깽?몃? 諛붿씤?⑺빀?덈떎.
+         */
+        function mountCard(n) {
+          const card = document.createElement("div");
+          card.className = `agent-card ${n.kind}`;
+          card.setAttribute("data-id", n.id);
+          card.innerHTML = `
+            <div class="agent-header">
+              <div class="agent-avatar"><span class="dot"></span></div>
+              <div class="agent-title">
+                <span class="name">${n.name}</span>
+                <span class="role">${n.role}</span>
+              </div>
+            </div>
+            <div class="agent-metrics">
+              <div class="metric"><span class="label">RPS</span><span class="value">0.0</span></div>
+              <div class="metric"><span class="label">p95</span><span class="value">0 ms</span></div>
+              <div class="metric"><span class="label">RAG</span><span class="value">0</span></div>
+            </div>
+          `;
+          cardsLayer.appendChild(card);
+
+          // 臾쇰━ ?붿쭊 ?쒕옒洹??몃뱾??
+          card.addEventListener("pointerdown", (e) => {
+            e.preventDefault();
+            card.setPointerCapture(e.pointerId);
+            n._dragging = true;
+            // 臾쇰━ ?붿쭊??'怨좎젙' ?좏샇
+            n.fx = n.x;
+            n.fy = n.y;
+          });
+
+          card.addEventListener("pointermove", (e) => {
+            if (!n._dragging) return;
+            // 留덉슦???대룞??e.movementX/Y)??'怨좎젙' ?꾩튂??諛섏쁺
+            // (以??ъ씠 ?놁쑝誘濡?媛꾨떒??movementX/Y ?ъ슜)
+            if (n.fx != null && n.fy != null) {
+              n.fx += e.movementX;
+              n.fy += e.movementY;
+            }
+          });
+
+          card.addEventListener("pointerup", (e) => {
+            if (!n._dragging) return;
+            n._dragging = false;
+            card.releasePointerCapture(e.pointerId);
+            // '怨좎젙' ?댁젣 -> 臾쇰━ ?붿쭊???ㅼ떆 ?쒖뼱沅?媛吏?
+            n.fx = null;
+            n.fy = null;
+          });
+        }
+
+        /**
+         * SVG ?ｌ?瑜?DOM??留덉슫?명빀?덈떎.
+         */
+        function mountEdge(l) {
+          const id = `${l.source}->${l.target}`;
+          const path = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          path.setAttribute("class", "edge");
+          path.setAttribute("data-edge-id", id);
+          path.setAttribute("marker-end", "url(#arrow)");
+          edgesLayer.appendChild(path);
+
+          const label = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          label.setAttribute("class", "edge-label");
+          label.setAttribute("data-edge-label-id", `lbl-${id}`);
+          label.textContent = "A2A";
+          edgesLayer.appendChild(label);
+        }
+
+        // 5. 硫붿씤 猷⑦봽 (Main Loop)
+        let last = performance.now();
+        function loop() {
+          const now = performance.now();
+          // ?꾨젅??媛??쒓컙李?dt)瑜?怨꾩궛?섏뿬 臾쇰━ ?붿쭊???꾨떖
+          const dt = Math.min(1 / 30, (now - last) / 16.67);
+          last = now;
+
+          if (running) {
+            physics.step(dt); // 臾쇰━ 怨꾩궛
+          }
+          draw(); // 洹몃━湲?(?쇱떆?뺤? 以묒뿉??留덉?留??꾩튂??洹몃젮????
+
+          requestAnimationFrame(loop); // ?ㅼ쓬 ?꾨젅???붿껌
+        }
+
+        // 6. 珥덇린???ㅽ뻾
+
+        // A. 珥덇린 留??덉씠?꾩썐 怨꾩궛
+        const rect = widget.getBoundingClientRect();
+        const widgetWidth = rect.width || 300;
+        const widgetHeight = rect.height || 300;
+        const R = Math.min(widgetWidth, widgetHeight) / 3.5;
+        const cx = widgetWidth / 2;
+        const cy = widgetHeight / 2;
+
+        const others = graph.nodes.filter((n) => n.id !== "kinic");
+        others.forEach((n, i) => {
+          const ang = (i / others.length) * Math.PI * 2;
+          n.x = cx + Math.cos(ang) * R;
+          n.y = cy + Math.sin(ang) * R;
+        });
+        const kinic = graph.nodes.find((n) => n.id === "kinic");
+        kinic.x = cx;
+        kinic.y = cy;
+
+        // B. DOM???몃뱶 諛??ｌ? 留덉슫??
+        graph.nodes.forEach(mountCard);
+        graph.links.forEach(mountEdge);
+
+        // C. ?곕え ?꾩뒪 ?쒖옉
+        setInterval(() => {
+          if (!running) return; // ?쇱떆?뺤? ??以묐떒
+
+          const ids = graph.nodes.map((n) => n.id);
+          const s = ids[Math.floor(Math.random() * ids.length)];
+          let t = ids[Math.floor(Math.random() * ids.length)];
+          if (t === s) t = "kinic";
+
+          if (graph.links.some((l) => l.source === s && l.target === t)) {
+            const types = ["msg", "task", "artifact"];
+            const k = types[Math.floor(Math.random() * types.length)];
+            onA2A({
+              type: k,
+              source: s,
+              target: t,
+              latencyMs: Math.random() * 300 + 50,
+            });
+          }
+        }, 1000); // 1珥덈쭏??
+
+        // D. 硫붿씤 猷⑦봽 ?쒖옉! (draw() ???loop() ?몄텧)
+        loop();
+      });
+    </script>
+  </body>
+</html>

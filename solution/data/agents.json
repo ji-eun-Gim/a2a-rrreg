@@ -1,46 +1,99 @@
 [
   {
     "card": {
-      "name": "Agent1",
-      "description": "",
+      "name": "Delivery Agent",
+      "description": "주문 배송 상태를 조회하고 관리하는 에이전트입니다.",
       "protocolVersion": "1.0",
       "url": "http://localhost:10001",
+      "preferredTransport": "JSONRPC",
       "version": "1.0.0",
+      "provider": {
+        "organization": "oneth.ai",
+        "url": "https://oneth.ai"
+      },
       "capabilities": {
         "streaming": true,
         "pushNotifications": true,
         "stateTransitionHistory": false
-      }
-    },
-    "status": "Active"
-  },
-  {
-    "card": {
-      "name": "Agent2",
-      "description": "",
-      "protocolVersion": "1.0",
-      "url": "http://localhost:10001",
-      "version": "1.0.0",
-      "capabilities": {
-        "streaming": true,
-        "pushNotifications": true,
-        "stateTransitionHistory": false
-      }
-    },
-    "status": "Active"
-  },
-  {
-    "card": {
-      "name": "Agent3",
-      "description": "",
-      "protocolVersion": "1.0",
-      "url": "http://localhost:10001",
-      "version": "1.0.0",
-      "capabilities": {
-        "streaming": true,
-        "pushNotifications": true,
-        "stateTransitionHistory": false
-      }
+      },
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
+      },
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "defaultInputModes": [
+        "text/plain"
+      ],
+      "defaultOutputModes": [
+        "text/plain"
+      ],
+      "skills": [
+        {
+          "id": "delivery_lookup",
+          "name": "배송 조회",
+          "description": "주문번호 또는 사용자 ID로 배송 상태를 조회할 수 있습니다.",
+          "tags": [
+            "delivery",
+            "tracking",
+            "order"
+          ],
+          "examples": [
+            "ORD1001 주문 상태 알려줘",
+            "고객 1234의 배송 현황 보여줘"
+          ],
+          "inputModes": [
+            "text/plain"
+          ],
+          "outputModes": [
+            "application/json"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ]
+        },
+        {
+          "id": "delivery_summary",
+          "name": "배송 요약",
+          "description": "전체 배송 목록 및 완료된 배송 건수를 요약 제공합니다.",
+          "tags": [
+            "summary",
+            "report"
+          ],
+          "examples": [
+            "오늘 완료된 배송 몇 건이야?",
+            "전체 배송 현황 요약"
+          ],
+          "inputModes": [
+            "text/plain"
+          ],
+          "outputModes": [
+            "text/plain"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6ImRlbGl2ZXJ5LWFnZW50LWtleS0xIn0",
+          "signature": "MEQCIDlM5f0KJX3G6S_4eQl1eN1Ulx6BmbQ0L3FqkCvIkHq4AiBwOYt4dG47ODqEtkqK1gyhIShYYeD4YCM7MtfdrmImqA==",
+          "header": {
+            "kid": "delivery-agent-key-1"
+          }
+        }
+      ]
     },
     "status": "Active"
   }

@@ -1,0 +1,170 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A2A Security Dashboard - Ruleset</title>
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add" />
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="app-header">
+        <div class="logo">A2A SECURE</div>
+
+        <nav class="main-nav">
+          <a href="/" class="nav-link">Dashboard</a>
+          <a href="/agents" class="nav-link">Agents</a>
+          <a href="/logs" class="nav-link">Logs</a>
+          <a href="/ruleset" class="nav-link active">Ruleset</a>
+        </nav>
+      </header>
+
+      <main class="content-area">
+        <section id="ruleset" class="content-page active">
+          <div class="widget widget-ruleset-list">
+            <div class="widget-title-row">
+              <h3 class="widget-title">Ruleset List</h3>
+              <button class="btn btn-primary icon-only" id="openModalBtn" title="Add New Rule">
+                <span class="material-symbols-outlined">add</span>
+              </button>
+            </div>
+
+            <div class="table-container">
+              <table class="ruleset-table">
+                <thead>
+                  <tr>
+                    <th>Rule ID</th>
+                    <th>Rule Name</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>RULE-001</td>
+                    <td>Task Replay Detection</td>
+                    <td><span class="status-active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td>RULE-002</td>
+                    <td>Card Spoofing Detection</td>
+                    <td><span class="status-active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td>RULE-003</td>
+                    <td>Unusual Data Access</td>
+                    <td><span class="status-active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td>RULE-004</td>
+                    <td>Agent Impersonation</td>
+                    <td><span class="status-active">Active</span></td>
+                  </tr>
+                  <tr>
+                    <td>RULE-005</td>
+                    <td>Data Exfiltration</td>
+                    <td><span class="status-disabled">Disabled</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="widget widget-ruleset-detail">
+            <h3 class="widget-title">Rule Details</h3>
+            <div class="rule-detail-content"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="ruleModal">
+      <h3>??猷곗뀑 ?ㅼ젙</h3>
+      <form id="ruleForm">
+        <div>
+          <label for="ruleName">猷??대쫫:</label>
+          <input type="text" id="ruleName" name="ruleName" required />
+        </div>
+        <div>
+          <label for="ruleType">猷????</label>
+          <select id="ruleType" name="ruleType">
+            <option value="allow">Allow</option>
+            <option value="deny">Deny</option>
+            <option value="alert">Alert</option>
+          </select>
+        </div>
+        <div>
+          <label for="ruleStatus">?곹깭:</label>
+          <select id="ruleStatus" name="ruleStatus">
+            <option value="Active">Active</option>
+            <option value="Disabled">Disabled</option>
+          </select>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="btn-secondary" id="closeModalBtn">
+            痍⑥냼
+          </button>
+          <button type="submit" class="btn-primary" id="saveBtn">???/button>
+        </div>
+      </form>
+    </dialog>
+
+    <script>
+      // DOM ?붿냼?ㅼ쓣 蹂?섏뿉 ?좊떦
+      const openBtn = document.getElementById("openModalBtn");
+      const modal = document.getElementById("ruleModal");
+      const closeBtn = document.getElementById("closeModalBtn");
+      const ruleForm = document.getElementById("ruleForm");
+
+      // [?닿린] "Add New Rule" 踰꾪듉 ?대┃ ??
+      openBtn.addEventListener("click", () => {
+        modal.showModal(); // 紐⑤떖 ?꾩슦湲?
+      });
+
+      // [痍⑥냼] 紐⑤떖 ?대???"痍⑥냼" 踰꾪듉 ?대┃ ??
+      closeBtn.addEventListener("click", () => {
+        modal.close(); // 紐⑤떖 ?リ린
+      });
+
+      // [??? 紐⑤떖 ?대???"??? 踰꾪듉 ?대┃ (???쒖텧) ??
+      ruleForm.addEventListener("submit", (event) => {
+        event.preventDefault(); // ?섏씠吏 ?덈줈怨좎묠(湲곕낯 ?숈옉) 諛⑹?
+
+        // 1. ?쇱뿉??媛?媛?몄삤湲?
+        const ruleName = document.getElementById("ruleName").value;
+        const ruleType = document.getElementById("ruleType").value;
+        const ruleStatus = document.getElementById("ruleStatus").value;
+
+        // 2. ?곹깭???곕씪 CSS ?대옒??寃곗젙
+        const statusClass =
+          ruleStatus === "Active" ? "status-active" : "status-disabled";
+
+        // 3. ??Rule ID ?꾩떆 ?앹꽦
+        const tableBody = document.querySelector(".ruleset-table tbody");
+        const newRuleId =
+          "RULE-" + String(tableBody.rows.length + 1).padStart(3, "0");
+
+        // 4. (蹂대꼫??湲곕뒫) ?ㅼ젣 ?뚯씠釉붿뿉 ??猷?異붽?
+        const newRow = tableBody.insertRow(); // ??<tr> 異붽?
+        newRow.innerHTML = `
+          <td>${newRuleId}</td>
+          <td>${ruleName}</td>
+          <td><span class="${statusClass}">${ruleStatus}</span></td>
+        `;
+
+        // 5. ??由ъ뀑 諛?紐⑤떖 ?リ린
+        ruleForm.reset();
+        modal.close();
+      });
+
+      // [?좉퇋] 紐⑤떖??諛붽묑履?諛곌꼍)???대┃?덉쓣 ???リ린
+      modal.addEventListener("click", (event) => {
+        // ?대┃???붿냼媛 <dialog> ?쒓렇 ?먯떊???뚮쭔 ?レ뒿?덈떎.
+        if (event.target === modal) {
+          modal.close();
+        }
+      });
+    </script>
+  </body>
+</html>
+

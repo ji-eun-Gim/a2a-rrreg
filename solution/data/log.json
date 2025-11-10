@@ -1,0 +1,38 @@
+[
+  {
+    "message": "에이전트 추가 성공 (201 Created): Delivery Agent",
+    "ok": true,
+    "timeIso": "2025-11-10T17:51:54.494515",
+    "timeText": "17시 51분 54초"
+  },
+  {
+    "message": "토큰 검증 성공",
+    "ok": true,
+    "timeIso": "2025-11-10T17:51:41.518242",
+    "timeText": "17시 51분 41초"
+  },
+  {
+    "message": "스키마 검증 실패 :  card 필드 누락 (422 Unprocessable Entity)",
+    "ok": false,
+    "timeIso": "2025-11-10T17:49:28.120203",
+    "timeText": "17시 49분 28초"
+  },
+  {
+    "message": "토큰 검증 성공",
+    "ok": true,
+    "timeIso": "2025-11-10T17:49:18.791815",
+    "timeText": "17시 49분 18초"
+  },
+  {
+    "message": "스키마 검증 실패 :   signatures is required and must be a non-empty array",
+    "ok": false,
+    "timeIso": "2025-11-10T17:45:07.280126",
+    "timeText": "17시 45분 07초"
+  },
+  {
+    "message": "토큰 검증 성공",
+    "ok": true,
+    "timeIso": "2025-11-10T17:45:00.102418",
+    "timeText": "17시 45분 00초"
+  }
+]
