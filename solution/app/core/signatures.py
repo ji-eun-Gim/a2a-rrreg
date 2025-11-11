@@ -9,12 +9,18 @@ from __future__ import annotations
 import json
 import base64
 from typing import Any, Dict, Tuple
+import os
 
 
 def _b64url_decode(data: str) -> bytes:
     data = data.strip()
     pad = '=' * (-len(data) % 4)
     return base64.urlsafe_b64decode(data + pad)
+
+
+def _allowed_algs() -> set[str]:
+    raw = os.environ.get("ALLOWED_JWS_ALGS", "ES256,RS256,HS256")
+    return {alg.strip() for alg in raw.split(',') if alg.strip()}
 
 
 def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
@@ -46,20 +52,29 @@ def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
         try:
             prot_bytes = _b64url_decode(prot)
             prot_json = json.loads(prot_bytes.decode('utf-8'))
+            if not isinstance(prot_json, dict):
+                return False, f'signatures[{i}].protected must decode to a JSON object'
         except Exception:
             return False, f'signatures[{i}].protected is not valid base64url JSON'
         try:
             _ = _b64url_decode(raw_sig)
         except Exception:
             return False, f'signatures[{i}].signature is not valid base64url'
-        kid_in_protected = prot_json.get('kid') if isinstance(prot_json, dict) else None
-        if isinstance(kid_in_protected, str) and kid_in_protected.strip():
-            if kid_in_protected.strip() != hdr.get('kid').strip():
-                return False, f'signatures[{i}].header.kid mismatch with protected header'
+        # alg must be present and allowed
+        alg = prot_json.get('alg')
+        if not isinstance(alg, str) or not alg.strip():
+            return False, f'signatures[{i}].protected.alg missing'
+        if alg.strip() not in _allowed_algs():
+            return False, f'signatures[{i}].protected.alg not allowed'
+        # kid must be present and match header.kid
+        kid_in_protected = prot_json.get('kid')
+        if not isinstance(kid_in_protected, str) or not kid_in_protected.strip():
+            return False, f'signatures[{i}].protected.kid missing'
+        if kid_in_protected.strip() != hdr.get('kid').strip():
+            return False, f'signatures[{i}].header.kid mismatch with protected header'
     return True, ''
 
 
 __all__ = [
     'validate_signatures_jws_like',
 ]
-

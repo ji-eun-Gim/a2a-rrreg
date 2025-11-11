@@ -1,38 +1,62 @@
 [
   {
+    "message": "스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)",
+    "ok": false,
+    "timeIso": "2025-11-11T18:19:23.466101",
+    "timeText": "18시 19분 23초"
+  },
+  {
     "message": "에이전트 추가 성공 (201 Created): Delivery Agent",
     "ok": true,
-    "timeIso": "2025-11-10T17:51:54.494515",
-    "timeText": "17시 51분 54초"
+    "timeIso": "2025-11-11T16:40:11.365139",
+    "timeText": "16시 40분 11초"
   },
   {
-    "message": "토큰 검증 성공",
+    "message": "JWS 자동 서명 성공 : 시그니처 추가",
     "ok": true,
-    "timeIso": "2025-11-10T17:51:41.518242",
-    "timeText": "17시 51분 41초"
+    "timeIso": "2025-11-11T16:40:11.364164",
+    "timeText": "16시 40분 11초"
   },
   {
-    "message": "스키마 검증 실패 :  card 필드 누락 (422 Unprocessable Entity)",
+    "message": "정책 검사 실패 : 동일 name/url 이 존재 (409 Conflict)",
     "ok": false,
-    "timeIso": "2025-11-10T17:49:28.120203",
-    "timeText": "17시 49분 28초"
+    "timeIso": "2025-11-11T16:35:26.391878",
+    "timeText": "16시 35분 26초"
   },
   {
-    "message": "토큰 검증 성공",
+    "message": "JWS 자동 서명 성공 : 시그니처 추가",
     "ok": true,
-    "timeIso": "2025-11-10T17:49:18.791815",
-    "timeText": "17시 49분 18초"
+    "timeIso": "2025-11-11T16:35:26.390950",
+    "timeText": "16시 35분 26초"
   },
   {
-    "message": "스키마 검증 실패 :   signatures is required and must be a non-empty array",
+    "message": "신원 검증 실패 : 토큰 무효 (401 Unauthorized)",
     "ok": false,
-    "timeIso": "2025-11-10T17:45:07.280126",
-    "timeText": "17시 45분 07초"
+    "timeIso": "2025-11-11T16:33:36.479739",
+    "timeText": "16시 33분 36초"
   },
   {
-    "message": "토큰 검증 성공",
+    "message": "신원 검증 실패 : 토큰 무효 (401 Unauthorized)",
+    "ok": false,
+    "timeIso": "2025-11-11T16:33:14.176823",
+    "timeText": "16시 33분 14초"
+  },
+  {
+    "message": "스키마 검증 실패 : 에이전트 최대 바이트 넘김 (413 Payload Too Larg)",
+    "ok": false,
+    "timeIso": "2025-11-11T16:30:57.737987",
+    "timeText": "16시 30분 57초"
+  },
+  {
+    "message": "에이전트 추가 성공 (201 Created): Delivery Agent",
     "ok": true,
-    "timeIso": "2025-11-10T17:45:00.102418",
-    "timeText": "17시 45분 00초"
+    "timeIso": "2025-11-11T16:01:17.656843",
+    "timeText": "16시 01분 17초"
+  },
+  {
+    "message": "JWS 자동 서명 성공 : 시그니처 추가",
+    "ok": true,
+    "timeIso": "2025-11-11T16:01:17.654251",
+    "timeText": "16시 01분 17초"
   }
 ]

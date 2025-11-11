@@ -7,9 +7,35 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import urlparse
 
-from env_loader import load_env
+try:
+    # 선택적 환경 로더 (없어도 동작)
+    from env_loader import load_env  # type: ignore
+    load_env()
+except Exception:
+    # 간단한 .env 로더 (solution/.env 우선)
+    import pathlib
 
-load_env()
+    def _load_dotenv_fallback() -> None:
+        try:
+            here = pathlib.Path(__file__).resolve()
+            dot_env = here.parents[2] / ".env"  # solution/.env
+            if not dot_env.exists():
+                return
+            for line in dot_env.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip().strip('"').strip("'")
+                if k and v and k not in os.environ:
+                    os.environ[k] = v
+        except Exception:
+            pass
+
+    _load_dotenv_fallback()
 
 
 def _to_key(value):
@@ -56,11 +82,15 @@ class PolicyConfig:
 
     @classmethod
     def from_env(cls) -> "PolicyConfig":
-        domains = tuple(
+        domains_list = [
             entry.strip().lower()
             for entry in os.environ.get("AGENT_DOMAIN_WHITELIST", "").split(",")
             if entry.strip()
-        )
+        ]
+        # Ensure localhost is always allowed as a convenience for local dev
+        if "localhost" not in domains_list:
+            domains_list.append("localhost")
+        domains = tuple(domains_list)
         ip_ranges = tuple(
             network
             for network in (

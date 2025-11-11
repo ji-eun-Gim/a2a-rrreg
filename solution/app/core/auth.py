@@ -82,7 +82,7 @@ def require_jwt():
     if status == 401 and data.get("detail") == "Invalid token":
         try:
             from .logging import append_log
-            append_log('인증 실패: 토큰 무효 (401 Unauthorized)', False)
+            append_log('신원 검증 실패 : 토큰 무효 (401 Unauthorized)', False)
         except Exception:
             pass
         return send_error(401, "INVALID_TOKEN", "Invalid or malformed token")
@@ -112,7 +112,7 @@ def require_admin():
     if _norm_email(email) != _ADMIN_EMAIL_NORM:
         try:
             from .logging import append_log
-            append_log('권한 거부: 관리자 권한 아님 (403 Forbidden)', False)
+            append_log('신원 검증 실패 : 관리자 권한 아님 (403 Forbidden)', False)
         except Exception:
             pass
         return send_error(403, "FORBIDDEN", "Admin privileges required")

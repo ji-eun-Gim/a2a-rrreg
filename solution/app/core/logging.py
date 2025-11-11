@@ -2,7 +2,8 @@ import os
 import json
 from datetime import datetime
 
-_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Use solution/data at project root
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 _LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
 
@@ -39,4 +40,3 @@ def append_log(message: str, ok: bool, when: datetime | None = None):
     except Exception:
         # Never break primary flow due to logging
         pass
-

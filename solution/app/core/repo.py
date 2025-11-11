@@ -1,7 +1,8 @@
 import os
 import json
 
-_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+# Use solution/data at project root (.. from app/, then data/)
+_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 AGENTS_FILE = os.path.join(_DATA_DIR, 'agents.json')
 LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
@@ -60,4 +61,3 @@ def load_logs():
 
 def save_logs(data):
     save_json(LOG_FILE, data)
-

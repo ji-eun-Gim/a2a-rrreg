@@ -39,10 +39,11 @@
           </div>
 
           <div class="widget widget-agent-details">
-            <div class="widget-title-row">
-              <h3 class="widget-title">선택한 에이전트 상세 정보</h3>
+            <div class="widget-title-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <h3 class="widget-title" style="margin:0;">선택한 에이전트 상세 정보</h3>
+              <button id="edit-agent-btn" class="btn" disabled>수정</button>
             </div>
-            <pre id="agent-details-json" class="agent-details-json" style="white-space: pre-wrap; color: var(--text-secondary)">[ 에이전트 리스트에서 항목을 클릭하면 상세 정보가 표시됩니다 ]</pre>
+            <pre id="agent-details-json" class="agent-details-json" style="white-space: pre-wrap; color: var(--text-secondary); max-height: 50vh; overflow: auto;">[ 에이전트 리스트에서 항목을 클릭하면 상세 정보가 표시됩니다 ]</pre>
           </div>
         </section>
       </main>
@@ -54,6 +55,9 @@
         const logEl = document.getElementById('registry-log');
         const detailsEl = document.getElementById('agent-details-json');
         const addBtn = document.getElementById('add-agent-btn');
+        const editBtn = document.getElementById('edit-agent-btn');
+
+        let selectedCard = null;
 
         function renderAgent(name, status) {
           const item = document.createElement('div');
@@ -94,7 +98,11 @@
                     } catch {
                       detailsEl.textContent = String(card);
                     }
+                    // Ensure the details panel shows from the top
+                    try { detailsEl.scrollTop = 0; } catch {}
                   }
+                  selectedCard = card;
+                  if (editBtn) editBtn.disabled = false;
                 });
                 listEl.appendChild(item);
               });
@@ -115,7 +123,7 @@
 
         function refreshAll() { loadAgents(); loadLogs(); }
 
-        function openAgentModal(token) {
+        function openAgentModal(token, initialCard) {
           const overlay = document.createElement('div');
           overlay.style.position = 'fixed';
           overlay.style.inset = '0';
@@ -148,15 +156,28 @@
             skills: ['basic']
           };
 
+          // Remove fields we do not want users to edit directly (e.g., signatures)
+          const sanitizeCard = (c) => {
+            try {
+              const copy = JSON.parse(JSON.stringify(c));
+              if (copy && typeof copy === 'object') {
+                delete copy.signatures;
+              }
+              return copy;
+            } catch { return c; }
+          };
+
+          const initial = initialCard && typeof initialCard === 'object' ? sanitizeCard(initialCard) : template;
+
           modal.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--border-color,#3a3a5f);padding-bottom:8px;">
-              <h3 style="margin:0;">에이전트 카드 추가</h3>
+              <h3 style="margin:0;">에이전트 카드 ${initialCard ? '수정' : '추가'}</h3>
               <button id="agent-modal-close" class="btn" style="min-width:72px;">닫기</button>
             </div>
             <div style="font-size:0.9rem;color:var(--text-secondary,#aab);margin-bottom:8px;">필수 필드를 포함한 카드 JSON을 입력하세요.</div>
-            <textarea id="agent-card-json" style="width:100%;height:320px;background:#0b0f14;color:#e7ecf2;border:1px solid var(--border-color,#3a3a5f);border-radius:8px;padding:10px;white-space:pre;">${JSON.stringify(template, null, 2)}</textarea>
+            <textarea id="agent-card-json" style="width:100%;height:320px;background:#0b0f14;color:#e7ecf2;border:1px solid var(--border-color,#3a3a5f);border-radius:8px;padding:10px;white-space:pre;">${JSON.stringify(initial, null, 2)}</textarea>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-              <button id="agent-modal-submit" class="btn btn-primary">추가</button>
+              <button id="agent-modal-submit" class="btn btn-primary">${initialCard ? '저장' : '추가'}</button>
             </div>
           `;
 
@@ -169,7 +190,8 @@
             const ta = modal.querySelector('#agent-card-json');
             if (!(ta instanceof HTMLTextAreaElement)) return;
             try {
-              await fetch('/api/create-agent', {
+              const endpoint = initialCard ? '/api/update-agent' : '/api/create-agent';
+              await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: ta.value
@@ -195,6 +217,22 @@
             }
           } catch {
             // 네트워크 오류 등도 에러 표시 없이 리프레시
+            try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
+          }
+        });
+
+        // Edit button flow
+        editBtn?.addEventListener('click', async () => {
+          if (!selectedCard) return;
+          const token = prompt('JWT 토큰을 입력하세요');
+          if (!token) return;
+          try {
+            const res = await fetch('/api/verify-admin', { method: 'GET', headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
+            if (res.ok) openAgentModal(token, selectedCard);
+            else {
+              try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
+            }
+          } catch {
             try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
           }
         });
