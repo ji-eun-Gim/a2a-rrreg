@@ -1,5 +1,11 @@
 [
   {
+    "message": "요청 오류 : agent_id 누락 (400 Bad Request)",
+    "ok": false,
+    "timeIso": "2025-11-11T19:07:39.632735",
+    "timeText": "19시 07분 39초"
+  },
+  {
     "message": "에이전트 삭제 성공 (200 OK): Delivery Agent",
     "ok": true,
     "timeIso": "2025-11-11T19:01:03.880109",
