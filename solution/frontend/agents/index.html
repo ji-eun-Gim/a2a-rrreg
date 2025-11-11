@@ -41,7 +41,10 @@
           <div class="widget widget-agent-details">
             <div class="widget-title-row" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
               <h3 class="widget-title" style="margin:0;">선택한 에이전트 상세 정보</h3>
-              <button id="edit-agent-btn" class="btn" disabled>수정</button>
+              <div style="display:flex;gap:8px;">
+                <button id="edit-agent-btn" class="btn" disabled>수정</button>
+                <button id="delete-agent-btn" class="btn btn-danger" disabled>삭제</button>
+              </div>
             </div>
             <pre id="agent-details-json" class="agent-details-json" style="white-space: pre-wrap; color: var(--text-secondary); max-height: 50vh; overflow: auto;">[ 에이전트 리스트에서 항목을 클릭하면 상세 정보가 표시됩니다 ]</pre>
           </div>
@@ -56,8 +59,10 @@
         const detailsEl = document.getElementById('agent-details-json');
         const addBtn = document.getElementById('add-agent-btn');
         const editBtn = document.getElementById('edit-agent-btn');
+        const deleteBtn = document.getElementById('delete-agent-btn');
 
         let selectedCard = null;
+        let selectedAgent = null;
 
         function renderAgent(name, status) {
           const item = document.createElement('div');
@@ -65,8 +70,13 @@
           const strong = document.createElement('strong');
           strong.textContent = name || 'Unknown';
           const badge = document.createElement('span');
-          badge.className = 'status-active';
-          badge.textContent = status || 'Active';
+          const st = (status || 'Active');
+          const isDeleted = st.toLowerCase() === 'deleted';
+          badge.className = isDeleted ? 'status-disabled' : 'status-active';
+          badge.textContent = st;
+          if (isDeleted) {
+            item.style.opacity = '0.65';
+          }
           item.appendChild(strong);
           item.appendChild(badge);
           return item;
@@ -102,7 +112,9 @@
                     try { detailsEl.scrollTop = 0; } catch {}
                   }
                   selectedCard = card;
+                  selectedAgent = a;
                   if (editBtn) editBtn.disabled = false;
+                  if (deleteBtn) deleteBtn.disabled = false;
                 });
                 listEl.appendChild(item);
               });
@@ -235,6 +247,31 @@
           } catch {
             try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
           }
+        });
+
+        // Delete button flow
+        deleteBtn?.addEventListener('click', async () => {
+          if (!selectedAgent) return;
+          const confirmDel = confirm('선택한 에이전트를 삭제하시겠습니까?');
+          if (!confirmDel) return;
+          const token = prompt('JWT 토큰을 입력하세요');
+          if (!token) return;
+          try {
+            const res = await fetch('/api/verify-admin', { method: 'GET', headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
+            if (!res.ok) {
+              try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
+              return;
+            }
+            const payload = selectedAgent && selectedAgent.agent_id
+              ? { agent_id: selectedAgent.agent_id }
+              : (selectedCard ? { card: selectedCard } : {});
+            await fetch('/api/delete-agent', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify(payload)
+            });
+          } catch {}
+          try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
         });
 
         // initial load

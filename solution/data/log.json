@@ -1,5 +1,47 @@
 [
   {
+    "message": "에이전트 삭제 성공 (200 OK): Delivery Agent",
+    "ok": true,
+    "timeIso": "2025-11-11T19:01:03.880109",
+    "timeText": "19시 01분 03초"
+  },
+  {
+    "message": "요청 오류 : agent_id 누락 (400 Bad Request)",
+    "ok": false,
+    "timeIso": "2025-11-11T18:59:53.414909",
+    "timeText": "18시 59분 53초"
+  },
+  {
+    "message": "요청 오류 : agent_id 누락 (400 Bad Request)",
+    "ok": false,
+    "timeIso": "2025-11-11T18:59:22.787606",
+    "timeText": "18시 59분 22초"
+  },
+  {
+    "message": "에이전트 수정 성공 (200 OK): Delivery Agent ",
+    "ok": true,
+    "timeIso": "2025-11-11T18:52:52.386870",
+    "timeText": "18시 52분 52초"
+  },
+  {
+    "message": "JWS 재서명 성공 : 시그니처 교체",
+    "ok": true,
+    "timeIso": "2025-11-11T18:52:52.385782",
+    "timeText": "18시 52분 52초"
+  },
+  {
+    "message": "에이전트 수정 성공 (200 OK): Delivery Agent ",
+    "ok": true,
+    "timeIso": "2025-11-11T18:25:20.386047",
+    "timeText": "18시 25분 20초"
+  },
+  {
+    "message": "JWS 재서명 성공 : 시그니처 교체",
+    "ok": true,
+    "timeIso": "2025-11-11T18:25:20.384545",
+    "timeText": "18시 25분 20초"
+  },
+  {
     "message": "스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)",
     "ok": false,
     "timeIso": "2025-11-11T18:19:23.466101",

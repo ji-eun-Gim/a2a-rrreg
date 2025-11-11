@@ -126,8 +126,20 @@ def create_app() -> Flask:
         raw = repo.load_agents()
         agents = []
         for item in raw:
-            if isinstance(item, dict) and isinstance(item.get('card'), dict) and isinstance(item['card'].get('name'), str):
-                agents.append({"name": item['card']['name'], "status": item.get('status', 'Active'), "card": item['card']})
+            if isinstance(item, dict) and isinstance(item.get('card'), dict):
+                card = item['card']
+                name = card.get('name') if isinstance(card.get('name'), str) else None
+                agents.append({
+                    "agent_id": item.get('agent_id'),
+                    "etag": item.get('etag'),
+                    "versionID": item.get('versionID'),
+                    "status": item.get('status', 'Active'),
+                    "name": name or 'Unknown',
+                    "card": card,
+                    "create_ts": item.get('create_ts'),
+                    "update_ts": item.get('update_ts'),
+                    "delete_ts": item.get('delete_ts'),
+                })
             else:
                 agents.append(item)
         return jsonify({"agents": agents})

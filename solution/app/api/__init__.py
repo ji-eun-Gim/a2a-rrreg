@@ -8,3 +8,4 @@ from . import verify_jwt  # noqa: E402,F401
 from . import create_agent  # noqa: E402,F401
 from . import verify_jws  # noqa: E402,F401
 from . import update_agent  # noqa: E402,F401
+from . import delete_agent  # noqa: E402,F401

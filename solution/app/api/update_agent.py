@@ -9,7 +9,7 @@ from ..core.auth import require_jwt, require_admin
 from ..core.logging import append_log
 from ..core import repo
 from ..core.validators import (
-    validate_card_basic,
+    validate_card_basic_update,
     DEFAULT_MAX_AGENT_CARD_BYTES,
 )
 from ..core.policy import PolicyEvaluator
@@ -81,7 +81,7 @@ def update_agent():
         return jsonify({"error": 'NOT_FOUND', "message": 'agent not found'}), 404
 
     # Basic schema check
-    ok, errors = validate_card_basic(card)
+    ok, errors = validate_card_basic_update(card)
     if not ok:
         append_log('스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
@@ -158,4 +158,3 @@ def update_agent():
     repo.save_agents(agents)
     append_log(f"에이전트 수정 성공 (200 OK): {card.get('name','')} ", True)
     return jsonify({"agent": rec}), 200
-

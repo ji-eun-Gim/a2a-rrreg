@@ -250,6 +250,68 @@ def validate_card_basic(card: dict):
     return len(errors) == 0, errors
 
 
+def validate_card_basic_update(card: dict):
+    """Update 용 간소 검증: signatures 없이도 통과.
+
+    필수 필드, provider, capabilities, defaultInput/Output, security, skills 등은 동일하게 검사하되
+    signatures 존재 검사는 생략한다. 재서명 단계에서 signatures를 채운다.
+    """
+    errors = []
+    if not isinstance(card, dict):
+        return False, ["card must be an object"]
+
+    required_string = ['protocolVersion', 'name', 'description', 'url', 'preferredTransport', 'version']
+    for f in required_string:
+        v = card.get(f)
+        if not isinstance(v, str) or v.strip() == '':
+            errors.append(f"{f} is required and must be a non-empty string")
+
+    prov = card.get('provider')
+    if not isinstance(prov, dict):
+        errors.append('provider is required and must be an object')
+    else:
+        if not isinstance(prov.get('organization'), str) or prov.get('organization', '').strip() == '':
+            errors.append('provider.organization is required and must be a non-empty string')
+        if not isinstance(prov.get('url'), str) or prov.get('url', '').strip() == '':
+            errors.append('provider.url is required and must be a non-empty string')
+
+    if not isinstance(card.get('capabilities'), dict):
+        errors.append('capabilities is required and must be an object')
+
+    if not isinstance(card.get('defaultInputModes'), list) or not all(isinstance(x, str) for x in card.get('defaultInputModes')):
+        errors.append('defaultInputModes is required and must be an array of strings')
+    if not isinstance(card.get('defaultOutputModes'), list) or not all(isinstance(x, str) for x in card.get('defaultOutputModes')):
+        errors.append('defaultOutputModes is required and must be an array of strings')
+
+    sec_schemes = card.get('securitySchemes')
+    if not isinstance(sec_schemes, dict) or 'bearerAuth' not in sec_schemes:
+        errors.append('securitySchemes.bearerAuth is required')
+
+    top_sec = card.get('security')
+    has_bearer_req = False
+    if isinstance(top_sec, list):
+        for req in top_sec:
+            if isinstance(req, dict) and 'bearerAuth' in req:
+                has_bearer_req = True
+                break
+    if not has_bearer_req:
+        errors.append('security with bearerAuth requirement is required at top level')
+
+    skills = card.get('skills')
+    if not isinstance(skills, list) or len(skills) == 0:
+        errors.append('skills is required and must be a non-empty array')
+    else:
+        for i, s in enumerate(skills):
+            if not isinstance(s, dict):
+                errors.append(f'skills[{i}] must be an object')
+                continue
+            sec = s.get('security')
+            if not sec:
+                errors.append(f'skills[{i}].security is required')
+
+    return len(errors) == 0, errors
+
+
 
 
 __all__ = [
@@ -257,4 +319,5 @@ __all__ = [
     "AgentCardParseResult",
     "AgentCardSchemaError",
     "validate_card_basic",
+    "validate_card_basic_update",
 ]
