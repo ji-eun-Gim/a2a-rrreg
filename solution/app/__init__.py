@@ -7,6 +7,7 @@ from .core import repo
 from .core.auth import require_jwt, require_admin
 from .core.validators import validate_card_basic
 from .core.logging import append_log
+from .core.tenants import extract_tenants
 
 
 BASEDIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -136,6 +137,7 @@ def create_app() -> Flask:
                     "status": item.get('status', 'Active'),
                     "name": name or 'Unknown',
                     "card": card,
+                    "tenants": item.get('tenants') if isinstance(item.get('tenants'), list) else [],
                     "create_ts": item.get('create_ts'),
                     "update_ts": item.get('update_ts'),
                     "delete_ts": item.get('delete_ts'),
@@ -184,6 +186,11 @@ def create_app() -> Flask:
 
         body = request.get_json(silent=True) or {}
         card = body.get('card') if isinstance(body.get('card'), dict) else body
+        tenants = []
+        if isinstance(body, dict):
+            tenants = extract_tenants(body.get('tenants'))
+            if not tenants:
+                tenants = extract_tenants(body.get('metadata'))
 
         v = validate_agent_card_basic(card)
         if not v['ok']:
@@ -202,14 +209,14 @@ def create_app() -> Flask:
             if isinstance(n, str) and n.lower() == name_lc:
                 return jsonify({"error": 'Agent already exists'}), 409
 
-        agents.append({"card": card, "status": 'Active'})
+        agents.append({"card": card, "status": 'Active', "tenants": tenants})
         save_json(AGENTS_FILE, agents)
         try:
             from app.core.logging import append_log
             append_log(f"에이전트 추가 성공 (201 Created): {name}", True)
         except Exception:
             pass
-        return jsonify({"agent": {"name": name, "status": 'Active', "card": card}}), 201
+        return jsonify({"agent": {"name": name, "status": 'Active', "card": card, "tenants": tenants}}), 201
 
     # Register API blueprints within create_app
     from .api import api_bp

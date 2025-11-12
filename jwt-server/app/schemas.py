@@ -7,9 +7,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     email: str | None = None
+    tenant: str | None = None
 
 class User(BaseModel):
     email: str
+    tenant: str
 
 class UserInDB(User):
     hashed_password: str

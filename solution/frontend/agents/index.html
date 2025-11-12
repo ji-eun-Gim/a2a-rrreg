@@ -6,6 +6,31 @@
     <title>A2A Security Dashboard - Agents</title>
     <link rel="stylesheet" href="../style.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add" />
+    <style>
+      .tenant-meta-section {
+        margin-top: 12px;
+        padding: 12px;
+        border: 1px solid var(--border-color, #3a3a5f);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .tenant-meta-title {
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+      .tenant-checkbox-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+      }
+      .tenant-checkbox-list label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <div class="app-container">
@@ -63,6 +88,10 @@
 
         let selectedCard = null;
         let selectedAgent = null;
+        const TENANT_OPTIONS = [
+          { value: 'customer-service', label: 'Customer Service (고객팀)' },
+          { value: 'logistics', label: 'Logistics (물류팀)' },
+        ];
 
         function renderAgent(name, status) {
           const item = document.createElement('div');
@@ -135,7 +164,7 @@
 
         function refreshAll() { loadAgents(); loadLogs(); }
 
-        function openAgentModal(token, initialCard) {
+        function openAgentModal(token, options = {}) {
           const overlay = document.createElement('div');
           overlay.style.position = 'fixed';
           overlay.style.inset = '0';
@@ -179,17 +208,34 @@
             } catch { return c; }
           };
 
+          const initialCard = options.card;
+          const selectedTenantsInitial = Array.isArray(options.tenants) ? options.tenants : [];
           const initial = initialCard && typeof initialCard === 'object' ? sanitizeCard(initialCard) : template;
+          const isEditMode = Boolean(initialCard);
+          const agentId = options.agentId;
+          const tenantCheckboxesHtml = (TENANT_OPTIONS.length
+            ? TENANT_OPTIONS.map(opt => {
+                const checked = selectedTenantsInitial.includes(opt.value) ? 'checked' : '';
+                return `<label><input type="checkbox" name="tenant-option" value="${opt.value}" ${checked}>${opt.label}</label>`;
+              }).join('')
+            : '<span>등록된 테넌트 옵션이 없습니다.</span>');
 
           modal.innerHTML = `
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;border-bottom:1px solid var(--border-color,#3a3a5f);padding-bottom:8px;">
-              <h3 style="margin:0;">에이전트 카드 ${initialCard ? '수정' : '추가'}</h3>
+              <h3 style="margin:0;">에이전트 카드 ${isEditMode ? '수정' : '추가'}</h3>
               <button id="agent-modal-close" class="btn" style="min-width:72px;">닫기</button>
             </div>
             <div style="font-size:0.9rem;color:var(--text-secondary,#aab);margin-bottom:8px;">필수 필드를 포함한 카드 JSON을 입력하세요.</div>
             <textarea id="agent-card-json" style="width:100%;height:320px;background:#0b0f14;color:#e7ecf2;border:1px solid var(--border-color,#3a3a5f);border-radius:8px;padding:10px;white-space:pre;">${JSON.stringify(initial, null, 2)}</textarea>
+            <div class="tenant-meta-section">
+              <div class="tenant-meta-title">테넌트 권한</div>
+              <div class="tenant-checkbox-list">
+                ${tenantCheckboxesHtml}
+              </div>
+              <p style="font-size:0.8rem;color:var(--text-secondary,#aab);margin:8px 0 0;">선택된 테넌트만 이 에이전트를 검색/사용할 수 있습니다.</p>
+            </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-              <button id="agent-modal-submit" class="btn btn-primary">${initialCard ? '저장' : '추가'}</button>
+              <button id="agent-modal-submit" class="btn btn-primary">${isEditMode ? '저장' : '추가'}</button>
             </div>
           `;
 
@@ -202,13 +248,23 @@
             const ta = modal.querySelector('#agent-card-json');
             if (!(ta instanceof HTMLTextAreaElement)) return;
             try {
-              const endpoint = initialCard ? '/api/update-agent' : '/api/create-agent';
+              const cardPayload = JSON.parse(ta.value);
+              const tenantInputs = Array.from(modal.querySelectorAll('input[name="tenant-option"]'));
+              const selectedTenants = tenantInputs
+                .filter(input => input instanceof HTMLInputElement && input.checked)
+                .map(input => input.value);
+              const payload = { card: cardPayload, tenants: selectedTenants };
+              if (agentId) payload.agent_id = agentId;
+              const endpoint = isEditMode ? '/api/update-agent' : '/api/create-agent';
               await fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: ta.value
+                body: JSON.stringify(payload)
               });
-            } catch { /* ignore network errors for UI flow */ }
+            } catch (err) {
+              alert('카드 JSON 또는 테넌트 선택을 다시 확인해주세요.');
+              return;
+            }
             // Always close and refresh regardless of result
             close();
             try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
@@ -222,7 +278,7 @@
             const res = await fetch('/api/verify-admin', { method: 'GET', headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
             if (res.ok) {
               // 성공 시 에이전트 카드 입력 모달 열기
-              openAgentModal(token);
+              openAgentModal(token, {});
             } else {
               // 실패 시 에러 모달/메시지 없이 즉시 새로고침
               try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
@@ -240,7 +296,7 @@
           if (!token) return;
           try {
             const res = await fetch('/api/verify-admin', { method: 'GET', headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' } });
-            if (res.ok) openAgentModal(token, selectedCard);
+            if (res.ok) openAgentModal(token, { card: selectedCard, tenants: selectedAgent?.tenants, agentId: selectedAgent?.agent_id });
             else {
               try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
             }
