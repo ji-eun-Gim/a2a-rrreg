@@ -1,0 +1,21 @@
+# Python / project artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Editor/OS noise
+.DS_Store
+Thumbs.db
+
+# Local data/state
+*.log
+*.sqlite
+
+# Node / frontend artifacts
+node_modules/
+dist/
+build/
