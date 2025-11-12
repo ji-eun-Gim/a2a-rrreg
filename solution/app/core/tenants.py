@@ -1,12 +1,44 @@
 """Tenant helpers shared across API layers."""
 
+import json
+import os
 from typing import Iterable, List
 
-TENANT_CHOICES = [
+_DEFAULT_CHOICES = [
     {"value": "customer-service", "label": "Customer Service"},
     {"value": "logistics", "label": "Logistics"},
 ]
 
+
+def _load_env_tenants() -> List[dict]:
+    raw_json = os.getenv("SOLUTION_TENANTS_JSON")
+    if raw_json:
+        try:
+            data = json.loads(raw_json)
+            choices = []
+            for value in data:
+                if isinstance(value, str) and value.strip():
+                    slug = value.strip().lower()
+                    choices.append({"value": slug, "label": slug})
+            if choices:
+                return choices
+        except json.JSONDecodeError:
+            pass
+
+    raw = os.getenv("SOLUTION_TENANTS", "")
+    items = []
+    if isinstance(raw, str):
+        for entry in raw.split(","):
+            entry = entry.strip()
+            if entry:
+                items.append(entry)
+    if items:
+        return [{"value": item.lower(), "label": item} for item in items]
+
+    return _DEFAULT_CHOICES
+
+
+TENANT_CHOICES = _load_env_tenants()
 _VALID_TENANTS = {item["value"] for item in TENANT_CHOICES}
 
 
