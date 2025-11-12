@@ -153,11 +153,10 @@ def update_agent():
     rec['versionID'] = version_id
     rec['etag'] = f"W/\"{version_id}-{secrets.token_hex(3)}\""
     rec['card'] = card
-    tenants_payload = None
+    tenants = []
     if isinstance(body, dict):
-        tenants_payload = body.get('tenants') or body.get('metadata')
-    tenants = extract_tenants(tenants_payload)
-    if tenants or tenants_payload is not None:
+        tenants = extract_tenants(body.get('tenants'))
+    if tenants:
         rec['tenants'] = tenants
     rec['update_ts'] = now_local
     # do not touch create_ts / delete_ts / publisher_jws
