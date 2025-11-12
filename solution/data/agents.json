@@ -1,52 +1,59 @@
 [
   {
     "agent_id": "oneth.ai#agent:Delivery Agent.v1.0.0",
-    "etag": "W/\"4-734a64\"",
-    "versionID": 4,
+    "etag": "W/\"1-e6eeab\"",
+    "versionID": 1,
     "card": {
-      "capabilities": {
-        "pushNotifications": true,
-        "stateTransitionHistory": false,
-        "streaming": true
-      },
-      "defaultInputModes": [
-        "text/plain"
-      ],
-      "defaultOutputModes": [
-        "text/plain"
-      ],
-      "description": "주문 배송 를 조회하고 관리하는 에이전트입니다.",
       "name": "Delivery Agent",
-      "preferredTransport": "JSONRPC",
+      "description": "주문 배송 상태를 조회하고 관리하는 에이전트입니다.",
       "protocolVersion": "1.0",
+      "url": "http://localhost:10001",
+      "preferredTransport": "JSONRPC",
+      "version": "1.0.0",
       "provider": {
         "organization": "oneth.ai",
         "url": "https://oneth.ai"
+      },
+      "capabilities": {
+        "streaming": true,
+        "pushNotifications": true,
+        "stateTransitionHistory": false
+      },
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
       },
       "security": [
         {
           "bearerAuth": []
         }
       ],
-      "securitySchemes": {
-        "bearerAuth": {
-          "bearerFormat": "JWT",
-          "scheme": "bearer",
-          "type": "http"
-        }
-      },
+      "defaultInputModes": [
+        "text/plain"
+      ],
+      "defaultOutputModes": [
+        "text/plain"
+      ],
       "skills": [
         {
+          "id": "delivery_lookup",
+          "name": "배송 조회",
           "description": "주문번호 또는 사용자 ID로 배송 상태를 조회할 수 있습니다.",
+          "tags": [
+            "delivery",
+            "tracking",
+            "order"
+          ],
           "examples": [
             "ORD1001 주문 상태 알려줘",
             "고객 1234의 배송 현황 보여줘"
           ],
-          "id": "delivery_lookup",
           "inputModes": [
             "text/plain"
           ],
-          "name": "배송 조회",
           "outputModes": [
             "application/json"
           ],
@@ -54,24 +61,23 @@
             {
               "bearerAuth": []
             }
-          ],
-          "tags": [
-            "delivery",
-            "tracking",
-            "order"
           ]
         },
         {
+          "id": "delivery_summary",
+          "name": "배송 요약",
           "description": "전체 배송 목록 및 완료된 배송 건수를 요약 제공합니다.",
+          "tags": [
+            "summary",
+            "report"
+          ],
           "examples": [
             "오늘 완료된 배송 몇 건이야?",
             "전체 배송 현황 요약"
           ],
-          "id": "delivery_summary",
           "inputModes": [
             "text/plain"
           ],
-          "name": "배송 요약",
           "outputModes": [
             "text/plain"
           ],
@@ -79,32 +85,26 @@
             {
               "bearerAuth": []
             }
-          ],
-          "tags": [
-            "summary",
-            "report"
           ]
         }
       ],
-      "url": "http://localhost:10001",
-      "version": "1.0.0",
       "signatures": [
         {
           "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6InJlZ2lzdHJ5LWhzMjU2LWtleS0xIiwidHlwIjoiSldUIn0",
-          "signature": "bovPTeEd0GgAzHBVsDJdEBTfBGi6M7SZiJNvUcAY0VE",
+          "signature": "Epo_meOE-Y8JE3y5yo_9uEsXdwQ7Vk7EmZSTKzqYo8c",
           "header": {
             "kid": "registry-hs256-key-1"
           }
         }
       ]
     },
-    "status": "Deleted",
+    "status": "Active",
     "tenants": [
-      "customer-service"
+      "logistics"
     ],
-    "create_ts": "2025-11-11T16:40:11.364859+09:00",
-    "update_ts": "2025-11-11T19:01:03.879503+09:00",
-    "delete_ts": "2025-11-11T19:01:03.879503+09:00",
+    "create_ts": "2025-11-12T16:13:48.684786+09:00",
+    "update_ts": "2025-11-12T16:13:48.684786+09:00",
+    "delete_ts": null,
     "publisher_jws": [
       {
         "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6InJlZ2lzdHJ5LWhzMjU2LWtleS0xIiwidHlwIjoiSldUIn0",

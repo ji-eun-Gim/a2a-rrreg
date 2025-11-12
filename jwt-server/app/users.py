@@ -9,6 +9,11 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # 임시 유저 DB
 fake_users_db = {
+    "user2@example.com": {
+        "email": "user2@example.com",
+        "tenant": "logistics",
+        "hashed_password": hash_password("password1234"),
+    },
     "user@example.com": {
         "email": "user@example.com",
         "tenant": "customer-service",
@@ -26,18 +31,6 @@ def get_user(email: str):
     if user:
         return UserInDB(**user)
 
-def filter_users(q: str | None, tenant: str | None) -> List[User]:
-    results: list[User] = []
-    q_lower = q.lower() if q else None
-    tenant_lower = tenant.lower() if tenant else None
-
-    for record in fake_users_db.values():
-        if q_lower and q_lower not in record["email"].lower():
-            continue
-        if tenant_lower and record["tenant"].lower() != tenant_lower:
-            continue
-        results.append(User(email=record["email"], tenant=record["tenant"]))
-    return results
 
 # FastAPI에서 로그인용 토큰을 발급하는 엔드포인트
 @router.post("/token", response_model=Token)
@@ -51,13 +44,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     access_token = create_access_token(subject=user.email, tenant=user.tenant)
     return {"access_token": access_token, "token_type": "bearer"}
 
-# 사용자 검색 엔드포인트
-@router.get("/users/search", response_model=list[User])
-def search_users(
-    q: str | None = Query(default=None, description="이메일 부분 검색어"),
-    tenant: str | None = Query(default=None, description="팀/테넌트 필터"),
-):
-    return filter_users(q=q, tenant=tenant)
 
 # 토큰 속에서 이메일로 사용자 정보를 찾아 리턴하는 엔드포인트
 @router.get("/users/me", response_model=User)
