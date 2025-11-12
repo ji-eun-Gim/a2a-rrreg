@@ -16,6 +16,7 @@ from ..core.validators import (
 )
 from ..core.signatures import validate_signatures_jws_like
 from ..core.policy import check_duplicate_card, PolicyEvaluator
+from ..core.tenants import extract_tenants
 import requests
 
 # JWS-server config (optional auto-sign)
@@ -69,6 +70,13 @@ def create_agent():
     if not isinstance(card, dict):
         append_log('스키마 검증 실패 :   card 필드 누락', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": ['card is required']}), 422
+
+    # Capture tenant list (allow legacy metadata.tenants fallback)
+    tenants = []
+    if isinstance(body, dict):
+        tenants = extract_tenants(body.get('tenants'))
+        if not tenants:
+            tenants = extract_tenants(body.get('metadata'))
 
     # Capture any publisher-provided signatures to move into metadata later
     original_sigs = card.get('signatures') if isinstance(card.get('signatures'), list) else []
@@ -229,6 +237,7 @@ def create_agent():
         "versionID": version_id,
         "card": card,
         "status": 'Active',
+        "tenants": tenants,
         "create_ts": now_local,
         "update_ts": now_local,
         "delete_ts": None,
@@ -239,7 +248,7 @@ def create_agent():
     agents.append(record)
     repo.save_agents(agents)
     append_log(f"에이전트 추가 성공 (201 Created): {name}", True)
-    return jsonify({"agent": {"name": name, "status": 'Active', "card": card}}), 201
+    return jsonify({"agent": {"name": name, "status": 'Active', "card": card, "tenants": tenants}}), 201
 
 
 
