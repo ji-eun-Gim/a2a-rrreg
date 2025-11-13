@@ -71,12 +71,14 @@ def create_agent():
         append_log('스키마 검증 실패 :   card 필드 누락', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": ['card is required']}), 422
 
-    # Capture tenant list (allow legacy metadata.tenants fallback)
+    # Capture tenant list
     tenants = []
     if isinstance(body, dict):
         tenants = extract_tenants(body.get('tenants'))
-        if not tenants:
-            tenants = extract_tenants(body.get('metadata'))
+
+    if not tenants:
+        append_log('스키마 검증 실패 : tenant 선택 누락 (422 Unprocessable Entity)', False)
+        return jsonify({"error": 'TENANT_REQUIRED', "message": 'at least one tenant must be specified'}), 422
 
     # Capture any publisher-provided signatures to move into metadata later
     original_sigs = card.get('signatures') if isinstance(card.get('signatures'), list) else []
