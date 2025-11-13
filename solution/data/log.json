@@ -1,5 +1,35 @@
 [
   {
+    "message": "에이전트 조회 성공 (200 OK): scope=customer-service, returned=1",
+    "ok": true,
+    "timeIso": "2025-11-13T16:36:52.427111",
+    "timeText": "16시 36분 52초"
+  },
+  {
+    "message": "에이전트 조회 성공 (200 OK): scope=customer-service, returned=1",
+    "ok": true,
+    "timeIso": "2025-11-13T16:31:43.977182",
+    "timeText": "16시 31분 43초"
+  },
+  {
+    "message": "에이전트 조회 성공 (200 OK): scope=customer-service, returned=1",
+    "ok": true,
+    "timeIso": "2025-11-13T16:29:58.902832",
+    "timeText": "16시 29분 58초"
+  },
+  {
+    "message": "에이전트 조회 성공 (200 OK): scope=customer-service, returned=1",
+    "ok": true,
+    "timeIso": "2025-11-13T16:23:06.116002",
+    "timeText": "16시 23분 06초"
+  },
+  {
+    "message": "에이전트 조회 성공 (200 OK): scope=logistics, returned=1",
+    "ok": true,
+    "timeIso": "2025-11-13T16:22:25.175113",
+    "timeText": "16시 22분 25초"
+  },
+  {
     "message": "에이전트 추가 성공 (201 Created): CustomerAgent",
     "ok": true,
     "timeIso": "2025-11-13T13:26:52.778251",

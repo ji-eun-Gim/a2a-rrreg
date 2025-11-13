@@ -3,7 +3,6 @@ from flask import jsonify, request
 from . import api_bp
 from ..core import repo
 
-
 @api_bp.get('/logs')
 def get_logs():
     """Return registry activity logs."""
