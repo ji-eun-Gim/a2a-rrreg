@@ -10,3 +10,5 @@ from . import verify_jws  # noqa: E402,F401
 from . import update_agent  # noqa: E402,F401
 from . import delete_agent  # noqa: E402,F401
 from . import search_agents  # noqa: E402,F401
+from . import agents_basic  # noqa: E402,F401
+from . import logs_api  # noqa: E402,F401

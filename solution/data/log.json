@@ -1,20 +1,44 @@
 [
   {
-    "message": "신원 검증 실패 : 관리자 권한 아님 (403 Forbidden)",
-    "ok": false,
-    "timeIso": "2025-11-12T16:28:47.368385",
-    "timeText": "16시 28분 47초"
-  },
-  {
-    "message": "에이전트 추가 성공 (201 Created): Delivery Agent",
+    "message": "에이전트 추가 성공 (201 Created): CustomerAgent",
     "ok": true,
-    "timeIso": "2025-11-12T16:13:48.685361",
-    "timeText": "16시 13분 48초"
+    "timeIso": "2025-11-13T13:26:52.778251",
+    "timeText": "13시 26분 52초"
   },
   {
     "message": "JWS 자동 서명 성공 : 시그니처 추가",
     "ok": true,
-    "timeIso": "2025-11-12T16:13:48.681714",
-    "timeText": "16시 13분 48초"
+    "timeIso": "2025-11-13T13:26:52.764885",
+    "timeText": "13시 26분 52초"
+  },
+  {
+    "message": "정책 검사 실패 : 도메인/IP 화이트리스트 불일치 (400 Bad Request)",
+    "ok": false,
+    "timeIso": "2025-11-13T13:26:20.274793",
+    "timeText": "13시 26분 20초"
+  },
+  {
+    "message": "JWS 자동 서명 성공 : 시그니처 추가",
+    "ok": true,
+    "timeIso": "2025-11-13T13:26:20.269654",
+    "timeText": "13시 26분 20초"
+  },
+  {
+    "message": "신원 검증 실패 : 토큰 무효 (401 Unauthorized)",
+    "ok": false,
+    "timeIso": "2025-11-13T13:22:20.414915",
+    "timeText": "13시 22분 20초"
+  },
+  {
+    "message": "에이전트 추가 성공 (201 Created): Delivery Agent",
+    "ok": true,
+    "timeIso": "2025-11-13T11:26:24.726942",
+    "timeText": "11시 26분 24초"
+  },
+  {
+    "message": "JWS 자동 서명 성공 : 시그니처 추가",
+    "ok": true,
+    "timeIso": "2025-11-13T11:26:24.724832",
+    "timeText": "11시 26분 24초"
   }
 ]

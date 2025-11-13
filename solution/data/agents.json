@@ -1,7 +1,7 @@
 [
   {
     "agent_id": "oneth.ai#agent:Delivery Agent.v1.0.0",
-    "etag": "W/\"1-e6eeab\"",
+    "etag": "W/\"1-935f41\"",
     "versionID": 1,
     "card": {
       "name": "Delivery Agent",
@@ -91,7 +91,7 @@
       "signatures": [
         {
           "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6InJlZ2lzdHJ5LWhzMjU2LWtleS0xIiwidHlwIjoiSldUIn0",
-          "signature": "Epo_meOE-Y8JE3y5yo_9uEsXdwQ7Vk7EmZSTKzqYo8c",
+          "signature": "BJXp2P3XGpRTS66Wvpr7VqBqrVpEp0sprKlmva2qSyg",
           "header": {
             "kid": "registry-hs256-key-1"
           }
@@ -102,8 +102,101 @@
     "tenants": [
       "logistics"
     ],
-    "create_ts": "2025-11-12T16:13:48.684786+09:00",
-    "update_ts": "2025-11-12T16:13:48.684786+09:00",
+    "create_ts": "2025-11-13T11:26:24.726549+09:00",
+    "update_ts": "2025-11-13T11:26:24.726549+09:00",
+    "delete_ts": null,
+    "publisher_jws": [
+      {
+        "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6InJlZ2lzdHJ5LWhzMjU2LWtleS0xIiwidHlwIjoiSldUIn0",
+        "signature": "Izy6DJ-N1MJkUnvUnuTc5Y3jBB0RWFqCh11URlL5JpY",
+        "header": {
+          "kid": "registry-hs256-key-1"
+        }
+      }
+    ],
+    "registrant": "admin@example.com"
+  },
+  {
+    "agent_id": "oneth.ai#agent:CustomerAgent.v1.0.0",
+    "etag": "W/\"1-2a6910\"",
+    "versionID": 1,
+    "card": {
+      "name": "CustomerAgent",
+      "description": "customer_agent.description",
+      "protocolVersion": "1.0",
+      "url": "http://localhost:10006",
+      "preferredTransport": "JSONRPC",
+      "version": "1.0.0",
+      "provider": {
+        "organization": "oneth.ai",
+        "url": "https://oneth.ai"
+      },
+      "capabilities": {
+        "streaming": true,
+        "pushNotifications": true,
+        "stateTransitionHistory": false
+      },
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
+      },
+      "security": [
+        {
+          "bearerAuth": []
+        }
+      ],
+      "defaultInputModes": [
+        "text/plain"
+      ],
+      "defaultOutputModes": [
+        "text/plain"
+      ],
+      "skills": [
+        {
+          "id": "customer_management",
+          "name": "Customer Management",
+          "description": "고객 기본 정보와 구매 내역을 조회한다",
+          "tags": [
+            "customer",
+            "crm",
+            "purchase history"
+          ],
+          "examples": [
+            "홍길동 기본 정보 알려줘",
+            "김철수 구매 내역 보여줘"
+          ],
+          "inputModes": [
+            "text/plain"
+          ],
+          "outputModes": [
+            "application/json"
+          ],
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ]
+        }
+      ],
+      "signatures": [
+        {
+          "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6InJlZ2lzdHJ5LWhzMjU2LWtleS0xIiwidHlwIjoiSldUIn0",
+          "signature": "FcAc8FUOMBI0pC-5hPbRYXUels5YoC0wvb50UbPh9mU",
+          "header": {
+            "kid": "registry-hs256-key-1"
+          }
+        }
+      ]
+    },
+    "status": "Active",
+    "tenants": [
+      "customer-service"
+    ],
+    "create_ts": "2025-11-13T13:26:52.776520+09:00",
+    "update_ts": "2025-11-13T13:26:52.776520+09:00",
     "delete_ts": null,
     "publisher_jws": [
       {

@@ -21,7 +21,7 @@ fake_users_db = {
     },
     "admin@example.com": {
         "email": "admin@example.com",
-        "tenant": "logistics",
+        "tenant": ["customer-service","logistics"],
         "hashed_password": hash_password("admin123"),
     }
 }
