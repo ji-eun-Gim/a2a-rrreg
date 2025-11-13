@@ -1,21 +1,66 @@
 # Python / project artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.so
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.pybuild/
+.coverage
+.coverage.*
+htmlcov/
+.cache/
+.tox/
+.nox/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
 
 # Virtual environments
 .venv/
 venv/
+env/
+ENV/
+pyvenv.cfg
 
 # Editor/OS noise
 .DS_Store
 Thumbs.db
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
 
 # Local data/state
 *.log
 *.sqlite
+*.db
+solution/data/log.json
+
+# Environment / secrets
+.env
+.env.*
+*.env
+.envrc
 
 # Node / frontend artifacts
 node_modules/
 dist/
 build/
+.svelte-kit/
+.next/
+.nuxt/
+.angular/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Misc project outputs
+coverage/

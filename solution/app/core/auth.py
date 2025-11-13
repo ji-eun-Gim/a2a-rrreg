@@ -11,6 +11,8 @@ import os
 import requests
 from flask import request, jsonify, g
 
+from .tenants import normalize_tenants
+
 
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
 
@@ -77,7 +79,13 @@ def require_jwt():
     result = get_user_me(parts[1])
     status, data = result.get("status"), result.get("json") or {}
     if status == 200 and isinstance(data.get("email"), str):
-        g.jwt = {"sub": data["email"]}
+        tenants = normalize_tenants(data.get("tenants"))
+        # 일부 토큰은 단일 tenant 필드를 사용하므로 보강
+        if not tenants and isinstance(data.get("tenant"), str):
+            tenants = normalize_tenants([data["tenant"]])
+        g.jwt = {"sub": data["email"], "tenants": tenants}
+        if _norm_email(data["email"]) == _ADMIN_EMAIL_NORM:
+            g.jwt["role"] = "admin"
         return None
     if status == 401 and data.get("detail") == "Invalid token":
         try:
