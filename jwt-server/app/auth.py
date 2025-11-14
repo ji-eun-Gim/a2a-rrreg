@@ -17,7 +17,7 @@ def verify_password(plain_password: str, hashed_password: str):
 def create_access_token(
     *,
     subject: str,
-    tenant: str,
+    tenant: str | list[str],
     additional_claims: Dict[str, Any] | None = None,
 ) -> str:
     to_encode: Dict[str, Any] = {"sub": subject, "tenant": tenant}

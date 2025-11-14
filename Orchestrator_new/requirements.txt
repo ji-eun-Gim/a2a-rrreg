@@ -5,3 +5,4 @@ httpx>=0.26.0
 uvicorn>=0.30.0
 click>=8.1.7
 python-dotenv>=1.0.1
+litellm>=1.43.0
