@@ -8,6 +8,7 @@ import os
 import requests
 
 
+# --- 외부 서명 서버 설정 ---
 JWS_SERVER_URL = os.environ.get('JWS_SERVER_URL', 'http://127.0.0.1:8001')
 JWS_SIGN_URL = f"{JWS_SERVER_URL.rstrip('/')}/sign"
 JWS_VERIFY_URL = f"{JWS_SERVER_URL.rstrip('/')}/verify"
@@ -15,6 +16,7 @@ DEFAULT_JWS_KID = os.environ.get('JWS_KID', 'registry-hs256-key-1')
 
 
 def _derive_sub_from_card(card: dict) -> str:
+    """입력 card 에서 sub 값을 유추."""
     try:
         org = ''
         if isinstance(card.get('provider'), dict):
@@ -30,9 +32,11 @@ def _derive_sub_from_card(card: dict) -> str:
         return 'agent:unknown'
 
 
+# --- 카드 서명 API ---
 @api_bp.post('/jws/sign-card')
 def jws_sign_card():
-    # Admin only: registry issues signatures
+    """관리자 전용 card 서명 위임 API (/sign 프록시)."""
+    # 관리자 토큰만 서명 허용
     err = require_jwt() or require_admin()
     if err:
         return err
@@ -48,7 +52,7 @@ def jws_sign_card():
         append_log('JWS 서명 실패 : 필수 필드 누락 (422 Unprocessable Entity)', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
 
-    # Build sign payload for jws-server
+    # jws-server 에 전달할 페이로드 구성
     sign_payload = {
         'sub': body.get('sub') or _derive_sub_from_card(card),
         'version_id': body.get('version_id') or 1,
@@ -71,7 +75,7 @@ def jws_sign_card():
         append_log('JWS 서명 실패 : 응답 토큰 없음', False)
         return jsonify({"error": 'JWS_SIGN_FAILED', "message": 'missing token'}), 502
 
-    # Convert compact JWS to AgentCard signatures entry
+    # compact JWS 를 AgentCard signatures 형식으로 변환
     try:
         parts = token.split('.')
         protected_b64, _payload_b64, signature_b64 = parts[0], parts[1], parts[2]
@@ -94,8 +98,10 @@ def jws_sign_card():
     return jsonify({'card': card, 'jws': token, 'payload': data.get('payload') or {}}), 200
 
 
+# --- JWS 검증 API ---
 @api_bp.post('/jws/verify')
 def jws_verify():
+    """jws-server /verify 프록시 (일관된 로그 메시지)."""
     err = require_jwt() or require_admin()
     if err:
         return err
@@ -104,6 +110,7 @@ def jws_verify():
     if not isinstance(token, str) or not token:
         return jsonify({"error": 'BAD_REQUEST', "message": 'jws is required'}), 400
     payload = {'jws': token}
+    # 카드 전체 또는 해시를 전달하면 서버 측에서 해시 검증 가능
     if isinstance(body.get('card'), dict):
         payload['card'] = body['card']
     elif isinstance(body.get('card_hash'), str):
@@ -125,8 +132,7 @@ def jws_verify():
             append_log('JWS 검증 성공', True)
         return jsonify(data), 200
 
-    # 실패 케이스
-    # jws-server는 400에 detail이 문자열 또는 객체일 수 있음
+    # 실패 케이스 (jws-server 가 400에서 detail 형태를 다르게 반환함)
     detail = None
     try:
         detail = data.get('detail') if isinstance(data, dict) else None
@@ -138,7 +144,7 @@ def jws_verify():
         if isinstance(detail, dict) and detail.get('code') == 'CARD_HASH_MISMATCH':
             append_log('JWS 검증 실패 : 카드 해시 불일치 (400 Bad Request)', False)
         else:
-            # 일반 JWT 오류 등
+            # 일반적인 토큰 오류
             append_log('JWS 검증 실패 : 토큰 무효 (400 Bad Request)', False)
         return jsonify(data), 400
 
@@ -146,13 +152,14 @@ def jws_verify():
     return jsonify({"error": 'JWS_VERIFY_FAILED', "status": status, "detail": detail}), 502
 
 
+# --- 카드 재서명 API ---
 @api_bp.post('/jws/resign-card')
 def jws_resign_card():
-    """기존 signatures를 제거하고 재서명해서 단일 시그니처로 대체.
+    """기존 signatures 를 제거하고 재서명하여 단일 시그니처로 교체.
 
-    - Admin only
-    - 카드 스키마 기본 검증 후 jws-server /sign 호출
-    - 반환된 JWS를 signatures[0] 형태로 설정(append가 아닌 replace)
+    - 관리자 전용 엔드포인트
+    - 카드 스키마 검증 이후 jws-server /sign 호출
+    - 반환된 JWS 를 signatures[0] 으로 덮어씀
     """
     err = require_jwt() or require_admin()
     if err:
@@ -192,7 +199,7 @@ def jws_resign_card():
         append_log('JWS 재서명 실패 : 응답 토큰 없음', False)
         return jsonify({"error": 'JWS_SIGN_FAILED', "message": 'missing token'}), 502
 
-    # compact JWS → AgentCard signatures[0]
+    # compact JWS 를 AgentCard signatures[0] 형태로 변환
     try:
         protected_b64, _payload_b64, signature_b64 = token.split('.')
     except Exception:

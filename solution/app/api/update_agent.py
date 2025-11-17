@@ -18,13 +18,14 @@ from ..core.tenants import extract_tenants
 from ..core.signatures import verify_jws
 
 
-# JWS-server config for resign
+# --- 외부 서명 서버 설정 (재서명) ---
 JWS_SERVER_URL = os.environ.get('JWS_SERVER_URL', 'http://127.0.0.1:8001')
 JWS_SIGN_URL = f"{JWS_SERVER_URL.rstrip('/')}/sign"
 DEFAULT_JWS_KID = os.environ.get('JWS_KID', 'registry-hs256-key-1')
 
 
 def _derive_agent_id(c: dict) -> str:
+    """Generator used both for lookups and when clients omit agent_id."""
     try:
         org = ''
         if isinstance(c.get('provider'), dict):
@@ -42,12 +43,13 @@ def _derive_agent_id(c: dict) -> str:
 
 @api_bp.post('/update-agent')
 def update_agent():
-    # Auth
+    """기존 에이전트 카드를 수정하고 재서명."""
+    # --- 인증 ---
     err = require_jwt() or require_admin()
     if err:
         return err
 
-    # Size check + JSON parse
+    # --- 본문 크기 확인 및 JSON 파싱 (create_agent 와 동일 패턴) ---
     raw = request.get_data(as_text=True) or ''
     try:
         if len(raw.encode('utf-8')) > DEFAULT_MAX_AGENT_CARD_BYTES:
@@ -61,7 +63,7 @@ def update_agent():
         append_log('스키마 검증 실패 : 잘못된 JSON 문법 (400 Bad Request)', False)
         return jsonify({"error": 'BAD_JSON', "message": 'Invalid JSON'}), 400
 
-    # card extract
+    # --- card 추출 ---
     card = None
     if isinstance(body, dict):
         card = body.get('card') if isinstance(body.get('card'), dict) else body
@@ -69,7 +71,8 @@ def update_agent():
         append_log('스키마 검증 실패 :   card 필드 누락', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": ['card is required']}), 422
 
-    # locate target agent
+    # --- 대상 레코드 식별 ---
+    # 저장소 조회 후 수정할 agent_id 를 먼저 파악
     agents = repo.load_agents()
     target_id = body.get('agent_id') if isinstance(body.get('agent_id'), str) else _derive_agent_id(card)
     idx = -1
@@ -82,12 +85,13 @@ def update_agent():
         append_log('리소스 없음 : 대상 에이전트를 찾을 수 없음 (404 Not Found)', False)
         return jsonify({"error": 'NOT_FOUND', "message": 'agent not found'}), 404
 
-    # Basic schema check
+    # --- 기본 스키마 검증 ---
     ok, errors = validate_card_basic_update(card)
     if not ok:
         append_log('스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
 
+    # --- signatures 구조 검증 (필요 시) ---
     sigs = card.get('signatures')
     if isinstance(sigs, list) and sigs:
         sig_ok, sig_reason = verify_jws(card)
@@ -95,7 +99,7 @@ def update_agent():
             append_log('스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)', False)
             return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
 
-    # Policy checks (whitelist) and duplicate name/url against other records
+    # --- 화이트리스트 및 중복 name/url 검증 ---
     try:
         evaluator = PolicyEvaluator()
         wle = evaluator._check_whitelist(card)
@@ -105,7 +109,7 @@ def update_agent():
         append_log('정책 검사 실패 : 도메인/IP 화이트리스트 불일치 (400 Bad Request)', False)
         return jsonify({"error": 'WHITELIST_REJECTED', "message": wle}), 400
 
-    # duplicate check excluding self
+    # 자기 자신을 제외한 중복 검사
     new_name = str(card.get('name') or '').strip().lower()
     new_url = str(card.get('url') or '').strip().lower()
     for j, rec in enumerate(agents):
@@ -123,7 +127,7 @@ def update_agent():
             append_log('정책 검사 실패 : 동일 name/url 이 존재 (409 Conflict)', False)
             return jsonify({"error": 'CONFLICT', "message": '동일한 url 을 가진 에이전트가 이미 존재합니다.'}), 409
 
-    # Resign via jws-server; do NOT move previous JWS to metadata
+    # --- jws-server 재서명 (이전 서명은 metadata 로 이동하지 않음) ---
     sign_payload = {
         'sub': _derive_agent_id(card),
         'version_id': agents[idx].get('versionID', 1),
@@ -150,13 +154,13 @@ def update_agent():
         else:
             append_log(f'JWS 재서명 실패 : 서버 오류({r.status_code})', False)
     except Exception:
-        # continue without resign if server unavailable
+        # 서명 서버 장애 시에도 업데이트 흐름은 계속 진행
         append_log('JWS 재서명 실패 : 서버 오류', False)
 
-    # Update record
+    # --- 레코드 갱신 ---
     now_local = datetime.now(timezone(timedelta(hours=9))).isoformat()
     rec = agents[idx]
-    # version bump and etag refresh
+    # 버전 및 ETag 갱신
     version_id = int(rec.get('versionID', 1)) + 1
     rec['versionID'] = version_id
     rec['etag'] = f"W/\"{version_id}-{secrets.token_hex(3)}\""
@@ -165,9 +169,10 @@ def update_agent():
     if isinstance(body, dict):
         tenants = extract_tenants(body.get('tenants'))
     if tenants:
+        # 요청 본문에 tenants 가 있을 때만 덮어씀
         rec['tenants'] = tenants
     rec['update_ts'] = now_local
-    # do not touch create_ts / delete_ts / publisher_jws
+    # create_ts / delete_ts / publisher_jws 는 유지
 
     repo.save_agents(agents)
     append_log(f"에이전트 수정 성공 (200 OK): {card.get('name','')} ", True)

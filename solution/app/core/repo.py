@@ -1,7 +1,7 @@
 import os
 import json
 
-# Use solution/data at project root (.. from app/, then data/)
+# --- 프로젝트 루트의 solution/data 디렉터리 경로 ---
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 AGENTS_FILE = os.path.join(_DATA_DIR, 'agents.json')
@@ -13,7 +13,7 @@ def _ensure_data_dir():
 
 
 def ensure_seed():
-    """Ensure data directory and seed files exist."""
+    """data 디렉터리 및 초기 JSON 파일이 없으면 생성."""
     _ensure_data_dir()
     if not os.path.exists(AGENTS_FILE):
         seed = [
