@@ -18,12 +18,26 @@ def _b64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(data + pad)
 
 
+_BASE64URL_CHARS = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+
+
+def _is_base64url(text: str) -> bool:
+    if not isinstance(text, str) or text == "":
+        return False
+    for ch in text:
+        if ch == '=':
+            continue
+        if ch not in _BASE64URL_CHARS:
+            return False
+    return True
+
+
 def _allowed_algs() -> set[str]:
     raw = os.environ.get("ALLOWED_JWS_ALGS", "ES256,RS256,HS256")
     return {alg.strip() for alg in raw.split(',') if alg.strip()}
 
 
-def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
+def verify_jws(card: Dict[str, Any]) -> Tuple[bool, str]:
     """JWS(JSON Serialization) 형태 유사성 검증(암호학적 검증 아님).
 
     - signatures[*].protected: base64url 디코드 → JSON 파싱 가능해야 함
@@ -49,6 +63,8 @@ def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
             return False, f'signatures[{i}].signature missing'
         if not isinstance(hdr, dict) or not isinstance(hdr.get('kid'), str) or not hdr.get('kid').strip():
             return False, f'signatures[{i}].header.kid missing'
+        if not _is_base64url(prot):
+            return False, f'signatures[{i}].protected is not base64url'
         try:
             prot_bytes = _b64url_decode(prot)
             prot_json = json.loads(prot_bytes.decode('utf-8'))
@@ -57,6 +73,8 @@ def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
         except Exception:
             return False, f'signatures[{i}].protected is not valid base64url JSON'
         try:
+            if not _is_base64url(raw_sig):
+                raise ValueError("not base64url")
             _ = _b64url_decode(raw_sig)
         except Exception:
             return False, f'signatures[{i}].signature is not valid base64url'
@@ -76,5 +94,5 @@ def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
 
 
 __all__ = [
-    'validate_signatures_jws_like',
+    'verify_jws',
 ]

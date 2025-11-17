@@ -15,7 +15,7 @@ from ..core.validators import (
 )
 from ..core.policy import PolicyEvaluator
 from ..core.tenants import extract_tenants
-from ..core.signatures import validate_signatures_jws_like
+from ..core.signatures import verify_jws
 
 
 # --- 외부 서명 서버 설정 (재서명) ---
@@ -94,7 +94,7 @@ def update_agent():
     # --- signatures 구조 검증 (필요 시) ---
     sigs = card.get('signatures')
     if isinstance(sigs, list) and sigs:
-        sig_ok, sig_reason = validate_signatures_jws_like(card)
+        sig_ok, sig_reason = verify_jws(card)
         if not sig_ok:
             append_log('스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)', False)
             return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
