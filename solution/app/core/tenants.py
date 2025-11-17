@@ -1,4 +1,4 @@
-"""Tenant helpers shared across API layers."""
+"""API 전반에서 사용하는 Tenant 헬퍼."""
 
 import json
 import os
@@ -43,7 +43,7 @@ _VALID_TENANTS = {item["value"] for item in TENANT_CHOICES}
 
 
 def normalize_tenants(values: object) -> List[str]:
-    """Normalize arbitrary tenant inputs into a unique, ordered list of slugs."""
+    """입력 데이터를 소문자 슬러그 리스트로 정규화."""
     if isinstance(values, str):
         candidates: Iterable[object] = [values]
     elif isinstance(values, Iterable):
@@ -64,7 +64,7 @@ def normalize_tenants(values: object) -> List[str]:
 
 
 def extract_tenants(raw: object) -> List[str]:
-    """Return a normalized list of tenants from arbitrary payload structure."""
+    """payload 어디에 있든 tenant 정보를 찾아 정규화."""
     if isinstance(raw, dict):
         return normalize_tenants(raw.get("tenants"))
     if raw is None:
