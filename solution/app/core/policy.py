@@ -8,11 +8,11 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 from urllib.parse import urlparse
 
 try:
-    # 선택적 환경 로더 (없어도 동작)
+    # --- 선택적 환경 로더 (env_loader 모듈 사용 시) ---
     from env_loader import load_env  # type: ignore
     load_env()
 except Exception:
-    # 간단한 .env 로더 (solution/.env 우선)
+    # --- 간단한 .env 로더 (solution/.env 우선) ---
     import pathlib
 
     def _load_dotenv_fallback() -> None:
@@ -36,6 +36,8 @@ except Exception:
             pass
 
     _load_dotenv_fallback()
+
+# --- 문자열/URL/네트워크 보조 함수 ---
 
 
 def _to_key(value):
@@ -66,6 +68,9 @@ def _parse_ip_range(entry: str) -> Optional[ipaddress.IPv4Network]:
     return network if isinstance(network, ipaddress.IPv4Network) else None
 
 
+# --- 정책 제한치/구성 정의 ---
+
+
 @dataclass(frozen=True)
 class ExtensionLimits:
     max_depth: int
@@ -87,7 +92,7 @@ class PolicyConfig:
             for entry in os.environ.get("AGENT_DOMAIN_WHITELIST", "").split(",")
             if entry.strip()
         ]
-        # Ensure localhost is always allowed as a convenience for local dev
+        # 로컬 개발 편의를 위해 localhost 는 무조건 허용
         if "localhost" not in domains_list:
             domains_list.append("localhost")
         domains = tuple(domains_list)
@@ -108,6 +113,7 @@ class PolicyConfig:
         return cls(domains=domains, ip_networks=ip_ranges, limits=limits)
 
 
+# --- 기본 환경 구성 및 파생 상수 ---
 _CONFIG = PolicyConfig.from_env()
 DOMAIN_WHITELIST: Tuple[str, ...] = _CONFIG.domains
 IP_WHITELIST: Tuple[ipaddress.IPv4Network, ...] = _CONFIG.ip_networks
