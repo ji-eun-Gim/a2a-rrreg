@@ -14,7 +14,7 @@ from ..core.validators import (
     validate_card_basic,
     DEFAULT_MAX_AGENT_CARD_BYTES,
 )
-from ..core.signatures import validate_signatures_jws_like
+from ..core.signatures import verify_jws
 from ..core.policy import check_duplicate_card, PolicyEvaluator
 from ..core.tenants import extract_tenants
 import requests
@@ -82,13 +82,26 @@ def create_agent():
 
     # Capture any publisher-provided signatures to move into metadata later
     original_sigs = card.get('signatures') if isinstance(card.get('signatures'), list) else []
+    if original_sigs:
+        sig_ok, sig_reason = verify_jws(card)
+        if not sig_ok:
+            try:
+                append_log('스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)', False)
+            except Exception:
+                pass
+            return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
 
-    # If no signatures or publisher signatures exist, try registry auto-sign (best-effort)
-    try:
-        # Always sign if missing, or replace publisher signatures with registry signature
-        need_sign = not original_sigs or True
-        if need_sign:
-            # derive subject
+    # Basic field-level validation (schema-lite)
+    ok, errors = validate_card_basic(card)
+    if not ok:
+        try:
+            append_log('스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)', False)
+        except Exception:
+            pass
+        return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
+
+    if not original_sigs:
+        try:
             def _derive_sub_from_card(c: dict) -> str:
                 try:
                     org = ''
@@ -125,38 +138,18 @@ def create_agent():
                             'signature': signature_b64,
                             'header': {'kid': DEFAULT_JWS_KID},
                         }
-                        # Replace any publisher signatures on the card with registry signature
                         card['signatures'] = [sig_entry]
-                        try:
-                            append_log('JWS 자동 서명 성공 : 시그니처 추가', True)
-                        except Exception:
-                            pass
             except Exception:
-                # auto-sign best-effort; proceed to normal validation
                 pass
-    except Exception:
-        pass
-
-    # Basic field-level validation (schema-lite)
-    ok, errors = validate_card_basic(card)
-    if not ok:
-        try:
-            # 표준화된 422 로그 메시지
-            append_log('스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)', False)
         except Exception:
             pass
-        return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
-
-    # JWS-like signature structure checks (no crypto verification)
-    sig_ok, sig_reason = validate_signatures_jws_like(card)
-    if not sig_ok:
-        try:
-            # 표준화된 서명 불일치 로그
-            append_log('스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)', False)
-        except Exception:
-            pass
-        # 498: Invalid Token (non-standard), requested mapping
-        return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
+        sig_ok, sig_reason = verify_jws(card)
+        if not sig_ok:
+            try:
+                append_log('스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)', False)
+            except Exception:
+                pass
+            return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
 
     agents = repo.load_agents()
     dup = check_duplicate_card(card, agents)

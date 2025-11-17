@@ -1,0 +1,20 @@
+[
+  {
+    "message": "에이전트 추가 성공 (201 Created): CustomerAgent",
+    "ok": true,
+    "timeIso": "2025-11-17T15:30:41.892890",
+    "timeText": "15시 30분 41초"
+  },
+  {
+    "message": "스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)",
+    "ok": false,
+    "timeIso": "2025-11-17T15:30:21.925599",
+    "timeText": "15시 30분 21초"
+  },
+  {
+    "message": "스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)",
+    "ok": false,
+    "timeIso": "2025-11-17T15:29:26.814779",
+    "timeText": "15시 29분 26초"
+  }
+]

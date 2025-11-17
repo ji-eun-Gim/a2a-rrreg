@@ -258,23 +258,28 @@
           submitBtn?.addEventListener('click', async () => {
             const ta = modal.querySelector('#agent-card-json');
             if (!(ta instanceof HTMLTextAreaElement)) return;
+            let cardPayload;
             try {
-              const cardPayload = JSON.parse(ta.value);
-              const selectedTenants = tenantInputs
-                .filter(input => input instanceof HTMLInputElement && input.checked)
-                .map(input => input.value);
-              const payload = { card: cardPayload, tenants: selectedTenants };
-              if (agentId) payload.agent_id = agentId;
-              const endpoint = isEditMode ? '/api/update-agent' : '/api/create-agent';
-              await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify(payload)
-              });
+              cardPayload = JSON.parse(ta.value);
             } catch (err) {
-              alert('카드 JSON 또는 테넌트 선택을 다시 확인해주세요.');
+              alert('카드 JSON 형식이 올바른지 확인해주세요.');
               return;
             }
+            const selectedTenants = tenantInputs
+              .filter(input => input instanceof HTMLInputElement && input.checked)
+              .map(input => input.value);
+            if (selectedTenants.length === 0) {
+              alert('최소 하나의 테넌트를 선택해주세요.');
+              return;
+            }
+            const payload = { card: cardPayload, tenants: selectedTenants };
+            if (agentId) payload.agent_id = agentId;
+            const endpoint = isEditMode ? '/api/update-agent' : '/api/create-agent';
+            await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify(payload)
+            });
             // Always close and refresh regardless of result
             close();
             try { if (window.opener && !window.opener.closed) window.opener.location.reload(); else window.location.reload(); } catch(_) {}
