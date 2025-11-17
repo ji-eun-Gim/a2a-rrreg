@@ -2,7 +2,7 @@
 "name": "CustomerAgent",
 "description": "customer_agent.description",
 "protocolVersion": "1.0",
-"url": "http://192.168.20.10:10006",
+"url": "http://localhost:10006",
 "preferredTransport": "JSONRPC",
 "version": "1.0.0",
 

@@ -2,6 +2,7 @@ import os
 import json
 import secrets
 from datetime import datetime, timezone, timedelta
+import requests
 from flask import request, jsonify
 
 from . import api_bp
@@ -14,7 +15,7 @@ from ..core.validators import (
 )
 from ..core.policy import PolicyEvaluator
 from ..core.tenants import extract_tenants
-import requests
+from ..core.signatures import validate_signatures_jws_like
 
 
 # --- 외부 서명 서버 설정 (재서명) ---
@@ -89,6 +90,14 @@ def update_agent():
     if not ok:
         append_log('스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)', False)
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
+
+    # --- signatures 구조 검증 (필요 시) ---
+    sigs = card.get('signatures')
+    if isinstance(sigs, list) and sigs:
+        sig_ok, sig_reason = validate_signatures_jws_like(card)
+        if not sig_ok:
+            append_log('스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)', False)
+            return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
 
     # --- 화이트리스트 및 중복 name/url 검증 ---
     try:

@@ -235,7 +235,7 @@
               <p style="font-size:0.8rem;color:var(--text-secondary,#aab);margin:8px 0 0;">선택된 테넌트만 이 에이전트를 검색/사용할 수 있습니다.</p>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
-              <button id="agent-modal-submit" class="btn btn-primary">${isEditMode ? '저장' : '추가'}</button>
+              <button id="agent-modal-submit" class="btn btn-primary" disabled>${isEditMode ? '저장' : '추가'}</button>
             </div>
           `;
 
@@ -244,12 +244,22 @@
 
           function close() { overlay.remove(); }
           modal.querySelector('#agent-modal-close')?.addEventListener('click', close);
-          modal.querySelector('#agent-modal-submit')?.addEventListener('click', async () => {
+          const submitBtn = modal.querySelector('#agent-modal-submit');
+          const tenantInputs = Array.from(modal.querySelectorAll('input[name="tenant-option"]'));
+
+          const updateSubmitDisabled = () => {
+            if (!(submitBtn instanceof HTMLButtonElement)) return;
+            const hasTenant = tenantInputs.some(input => input instanceof HTMLInputElement && input.checked);
+            submitBtn.disabled = !hasTenant;
+          };
+          tenantInputs.forEach(input => input?.addEventListener?.('change', updateSubmitDisabled));
+          updateSubmitDisabled();
+
+          submitBtn?.addEventListener('click', async () => {
             const ta = modal.querySelector('#agent-card-json');
             if (!(ta instanceof HTMLTextAreaElement)) return;
             try {
               const cardPayload = JSON.parse(ta.value);
-              const tenantInputs = Array.from(modal.querySelectorAll('input[name="tenant-option"]'));
               const selectedTenants = tenantInputs
                 .filter(input => input instanceof HTMLInputElement && input.checked)
                 .map(input => input.value);

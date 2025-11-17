@@ -4,9 +4,15 @@ from datetime import datetime
 from typing import Optional
 
 # --- 프로젝트 데이터 디렉터리/로그 파일 경로 ---
-_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+DATA_ROOT_OVERRIDE = os.environ.get("SOLUTION_DATA_ROOT")
+_ROOT_DIR = (
+    os.path.abspath(DATA_ROOT_OVERRIDE)
+    if DATA_ROOT_OVERRIDE
+    else os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+)
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 _LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
+MAX_LOG_ENTRIES = int(os.environ.get("SOLUTION_MAX_LOG_ENTRIES", "500"))
 
 
 def _ensure_log_file():
@@ -63,6 +69,8 @@ def append_log(
         if ip:
             entry['clientIp'] = ip
         logs.insert(0, entry)
+        if isinstance(logs, list) and len(logs) > MAX_LOG_ENTRIES:
+            del logs[MAX_LOG_ENTRIES:]
         with open(_LOG_FILE, 'w', encoding='utf-8') as f:
             json.dump(logs, f, ensure_ascii=False, indent=2)
     except Exception:

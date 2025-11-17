@@ -21,7 +21,7 @@ fake_users_db = {
     },
     "admin@example.com": {
         "email": "admin@example.com",
-        "tenant": ["customer-service","logistics"],
+        "tenant": ["logistics", "customer-service"],
         "hashed_password": hash_password("admin123"),
     }
 }
@@ -31,6 +31,12 @@ def get_user(email: str):
     if user:
         return UserInDB(**user)
 
+def _normalize_tenants(value):
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [str(item) for item in value if isinstance(item, str)]
+    return []
 
 # FastAPI에서 로그인용 토큰을 발급하는 엔드포인트
 @router.post("/token", response_model=Token)
@@ -55,14 +61,16 @@ def read_users_me(token: str = Depends(oauth2_scheme)):
             detail="Invalid token")
     
     email: str | None = payload.get("sub")
-    tenant: str | None = payload.get("tenant")
-    if not email or not tenant:
+    tenant_claim = payload.get("tenant")
+    claim_tenants = _normalize_tenants(tenant_claim)
+    if not email or not claim_tenants:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Token missing identity claims")
 
     user = get_user(email)
-    if not user or user.tenant != tenant:
+    user_tenants = _normalize_tenants(user.tenant) if user else []
+    if not user or not user_tenants or set(user_tenants) != set(claim_tenants):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found")
