@@ -11,6 +11,13 @@ from ..core.validators import validate_card_basic
 @api_bp.get('/agents')
 def list_agents():
     """Return all registered agents with normalized metadata."""
+    err = require_jwt()
+    if err:
+        return err
+    err = require_admin()
+    if err:
+        return err
+
     raw = repo.load_agents()
     agents = []
     for item in raw:
