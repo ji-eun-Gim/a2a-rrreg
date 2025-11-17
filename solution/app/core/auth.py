@@ -14,6 +14,7 @@ from flask import request, jsonify, g
 from .tenants import normalize_tenants
 
 
+# --- 관리자 이메일 기준값 ---
 ADMIN_EMAIL = os.environ.get('ADMIN_EMAIL', 'admin@example.com')
 
 def _norm_email(v: str | None) -> str:

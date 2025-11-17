@@ -30,9 +30,9 @@ def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
     - signatures[*].signature: base64url 디코드 가능해야 함
     - header.kid 와 protected 헤더의 kid(있다면)가 일치해야 함
 
-    Returns:
-      (True, "") if all signatures pass structural checks
-      (False, reason) otherwise
+    반환값:
+      - 모든 검증 통과 시 (True, "")
+      - 실패 시 (False, 실패 사유 문자열)
     """
     sigs = card.get('signatures')
     if not isinstance(sigs, list) or not sigs:
@@ -60,13 +60,13 @@ def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
             _ = _b64url_decode(raw_sig)
         except Exception:
             return False, f'signatures[{i}].signature is not valid base64url'
-        # alg must be present and allowed
+        # alg 값은 필수이며 허용 목록에 포함되어야 함
         alg = prot_json.get('alg')
         if not isinstance(alg, str) or not alg.strip():
             return False, f'signatures[{i}].protected.alg missing'
         if alg.strip() not in _allowed_algs():
             return False, f'signatures[{i}].protected.alg not allowed'
-        # kid must be present and match header.kid
+        # kid 값도 필수이며 header.kid 와 일치해야 함
         kid_in_protected = prot_json.get('kid')
         if not isinstance(kid_in_protected, str) or not kid_in_protected.strip():
             return False, f'signatures[{i}].protected.kid missing'

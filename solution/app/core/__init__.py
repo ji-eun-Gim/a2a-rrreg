@@ -1,1 +1,2 @@
-﻿# Core package placeholder\n
+"""앱 코어 패키지 초기화 모듈."""
+

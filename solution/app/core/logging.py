@@ -3,13 +3,14 @@ import json
 from datetime import datetime
 from typing import Optional
 
-# Use solution/data at project root
+# --- 프로젝트 데이터 디렉터리/로그 파일 경로 ---
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 _LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
 
 
 def _ensure_log_file():
+    """data/log.json 파일이 없으면 생성."""
     os.makedirs(_DATA_DIR, exist_ok=True)
     if not os.path.exists(_LOG_FILE):
         with open(_LOG_FILE, 'w', encoding='utf-8') as f:
@@ -21,7 +22,7 @@ def _k_time_label(dt: datetime) -> str:
 
 
 def _request_ip() -> Optional[str]:
-    """Best-effort extraction of client IP from Flask's request context."""
+    """Flask request 컨텍스트에서 클라이언트 IP 추출 (가능한 경우)."""
     try:
         from flask import request  # type: ignore
 
@@ -43,6 +44,7 @@ def append_log(
     capture_client_ip: bool = False,
     client_ip: str | None = None,
 ):
+    """레지스트리 공용 로그 파일에 항목을 추가."""
     try:
         _ensure_log_file()
         when = when or datetime.now()
@@ -64,5 +66,5 @@ def append_log(
         with open(_LOG_FILE, 'w', encoding='utf-8') as f:
             json.dump(logs, f, ensure_ascii=False, indent=2)
     except Exception:
-        # Never break primary flow due to logging
+        # 로깅 중 오류가 발생해도 본 흐름을 끊지 않음
         pass

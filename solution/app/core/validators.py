@@ -16,11 +16,11 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 try:
-    # 선택적 환경 로더 (없어도 동작)
+    # --- 선택적 환경 로더 (env_loader 사용 시) ---
     from env_loader import load_env  # type: ignore
     load_env()
 except Exception:
-    # 간단한 .env 로더 (solution/.env 우선)
+    # --- 간단한 .env 로더 (solution/.env 우선) ---
     import pathlib
 
     def _load_dotenv_fallback() -> None:
@@ -53,7 +53,7 @@ except Exception:  # jsonschema 미설치 환경에서도 임포트 오류 방�
     class ValidationError(Exception):  # type: ignore
         pass
 
-
+# --- 스키마 파일 및 크기 제한 설정 ---
 # 기본 최대 바이트(환경변수로 조정 가능)
 DEFAULT_MAX_AGENT_CARD_BYTES = int(os.environ.get("AGENT_CARD_MAX_BYTES", "2000"))  # 256 KiB
 

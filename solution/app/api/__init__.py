@@ -1,9 +1,9 @@
 ﻿from flask import Blueprint
 
-# Expose a blueprint for API routes
+# API 라우트를 연결할 Blueprint
 api_bp = Blueprint('api_bp', __name__, url_prefix='/api')
 
-# Import route modules to attach endpoints
+# Blueprint 등록을 위해 라우트 모듈 임포트
 from . import verify_jwt  # noqa: E402,F401
 from . import create_agent  # noqa: E402,F401
 from . import verify_jws  # noqa: E402,F401
