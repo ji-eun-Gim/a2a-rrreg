@@ -3,136 +3,233 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>A2A Security Dashboard - Agents</title>
+    <title>A2A Security Dashboard - 에이전트</title>
     <link rel="stylesheet" href="../style.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add" />
+    <link rel="stylesheet" href="/agents/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
+    />
+    <script src="/agents/agents.js" defer></script>
   </head>
   <body>
-    <div class="app-container">
+    <div class="app-container" data-page="agents">
       <header class="app-header">
         <div class="logo">A2A SECURE</div>
         <nav class="main-nav">
-          <a href="/" class="nav-link">Dashboard</a>
-          <a href="/agents" class="nav-link active">Agents</a>
-          <a href="/logs" class="nav-link">Logs</a>
-          <a href="/ruleset" class="nav-link">Ruleset</a>
+          <a href="/dashboard" class="nav-link">대시보드</a>
+          <a href="/agents" class="nav-link active">에이전트</a>
+          <a href="/logs" class="nav-link">로그</a>
+          <a href="/ruleset" class="nav-link">룰셋</a>
         </nav>
       </header>
 
       <main class="content-area">
-        <section id="agents" class="content-page active">
-          <div class="widget widget-agent-list">
-            <div class="widget-title-row">
-              <h3 class="widget-title">에이전트 리스트 (List)</h3>
-              <button id="add-agent-btn" class="btn btn-primary icon-only" title="에이전트 카드 추가">
-                <span class="material-symbols-outlined">add</span>
-              </button>
-            </div>
-            <div class="agent-list-container" id="agent-list"></div>
-          </div>
+        <div class="content-wrapper">
+          <section id="agents" class="content-page active">
+            <div class="agents-layout">
+              <!-- 사이드바: 에이전트 목록 + 네이버 스타일 검색바 -->
+              <aside class="widget agent-sidebar">
+                <div class="widget-header-with-button">
+                  <div class="widget-title icon-title">
+                    <span
+                      class="material-symbols-outlined icon-robot"
+                      aria-hidden="true"
+                      >robot_2</span
+                    >
+                    <span class="sr-only">에이전트 목록</span>
+                  </div>
+                  <div class="widget-actions">
+                    <label class="agent-search agent-search-bar">
+                      <span class="material-symbols-outlined agent-search-icon" aria-hidden="true">search</span>
+                      <input
+                        type="search"
+                        aria-label="에이전트 검색"
+                        class="agent-search-input"
+                        placeholder="에이전트 검색"
+                        autocomplete="off"
+                      />
+                    </label>
+                  </div>
+                </div>
 
-          <div class="widget widget-registry-log">
-            <div class="widget-title-row">
-              <h3 class="widget-title">레지스트리 로그 (추가/삭제)</h3>
-            </div>
-            <ul class="threat-list" id="registry-log"></ul>
-          </div>
+                <ul class="agent-list" id="agent-list">
+                  <li class="empty-state">에이전트를 불러오는 중…</li>
+                </ul>
+              </aside>
 
-          <div class="widget widget-agent-details">
-            <div class="widget-title-row">
-              <h3 class="widget-title">선택한 에이전트 상세 정보</h3>
+              <!-- 에이전트 상세 -->
+              <article class="widget agent-details" id="agent-details">
+                <div class="agent-details-placeholder">
+                  <h3>에이전트를 선택하세요</h3>
+                  <p>
+                    왼쪽 목록에서 에이전트를 선택하면 플러그인과 IAM 룰셋 연결을
+                    확인할 수 있습니다.
+                  </p>
+                </div>
+              </article>
             </div>
-            <pre id="agent-details-json" class="agent-details-json" style="white-space: pre-wrap; color: var(--text-secondary)">[ 에이전트 리스트에서 항목을 클릭하면 상세 정보가 표시됩니다 ]</pre>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
-  <script>
-  // 토큰 확인 후 결과와 관계없이 즉시 닫고 새로고침
-  document.addEventListener('DOMContentLoaded', () => {
-    const addBtn = document.getElementById('add-agent-btn');
-    addBtn?.addEventListener('click', async () => {
-      const token = prompt('JWT 토큰을 입력하세요');
-      if (!token) return;
-      try {
-        fetch('/api/verify-admin', {
-          method: 'GET',
-          headers: { Authorization: 'Bearer ' + token, Accept: 'application/json' },
-          keepalive: true,
-        }).catch(() => {});
-      } catch (_) {}
-      try {
-        if (window.opener && !window.opener.closed) {
-          window.opener.location.reload();
-        } else {
-          window.location.reload();
-        }
-      } catch (_) {}
-      try { window.close(); } catch (_) {}
-    });
-  });
-  </script>
+
+    <!-- 에이전트 리스트 템플릿 -->
+    <template id="agent-item-template">
+      <li class="agent-item">
+        <div class="agent-info">
+          <span class="agent-name"></span>
+          <span class="agent-description"></span>
+        </div>
+        <span class="status-chip"></span>
+      </li>
+    </template>
+
+    <!-- 에이전트 상세 템플릿 -->
+    <template id="agent-details-template">
+      <div class="agent-overview">
+        <div class="overview-header">
+          <div>
+            <h2 class="agent-title"></h2>
+            <p class="agent-subtitle"></p>
+          </div>
+          <div class="overview-meta">
+            <span class="status-chip"></span>
+            <span class="pill" data-role="created"></span>
+          </div>
+        </div>
+
+        <div class="plugins-panel">
+          <h3>설치된 플러그인</h3>
+          <ul class="plugin-list"></ul>
+        </div>
+      </div>
+
+      <form id="agent-policy-form" class="policy-form">
+        <div class="policy-header">
+          <h3>IAM 정책 연결</h3>
+          <label class="toggle">
+            <input type="checkbox" id="policy-enabled" />
+            <span>IAM 정책 사용</span>
+          </label>
+        </div>
+
+        <div class="policy-columns">
+          <div class="policy-column" data-policy-type="prompt_validation">
+            <h4>프롬프트 검증</h4>
+            <p class="policy-description">
+              실행 전에 입력 프롬프트를 검증하는 룰셋을 연결합니다.
+            </p>
+            <div class="ruleset-list"></div>
+          </div>
+
+          <div class="policy-column" data-policy-type="tool_validation">
+            <h4>툴 검증</h4>
+            <p class="policy-description">
+              툴 호출을 제어하고 전달되는 인자를 검증합니다.
+            </p>
+            <div class="ruleset-list"></div>
+          </div>
+
+          <div class="policy-column" data-policy-type="response_filtering">
+            <h4>응답 필터링</h4>
+            <p class="policy-description">
+              생성된 응답을 필터링하거나 민감 정보를 가립니다.
+            </p>
+            <div class="ruleset-list"></div>
+          </div>
+        </div>
+
+        <div class="policy-actions">
+          <span class="status-message" id="policy-status" role="status"></span>
+          <button type="submit" class="btn-primary">저장</button>
+        </div>
+      </form>
+    </template>
+
+    <!-- 에이전트 추가 모달 -->
+    <div class="modal-overlay hidden" id="add-agent-modal">
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-agent-modal-title"
+      >
+        <div class="modal-header">
+          <h3 id="add-agent-modal-title">에이전트 카드 추가</h3>
+          <button
+            class="btn-secondary"
+            id="close-add-agent-modal"
+            type="button"
+          >
+            닫기
+          </button>
+        </div>
+        <div class="modal-content">
+          <form id="add-agent-form" class="modal-form">
+            <label for="add-agent-body"
+              >JSON 형태의 카드 데이터를 입력하세요.</label
+            >
+            <textarea
+              id="add-agent-body"
+              placeholder='{"card": {"name": "...", ...}}'
+              rows="8"
+              required
+            ></textarea>
+            <fieldset class="checkbox-group">
+              <legend>테넌트 선택</legend>
+              <label><input type="checkbox" name="tenant" value="customer-service" /> customer-service</label>
+              <label><input type="checkbox" name="tenant" value="logistics" /> logistics</label>
+            </fieldset>
+            <div class="form-actions">
+              <span
+                id="add-agent-status"
+                class="status-message"
+                role="status"
+              ></span>
+              <button type="submit" class="btn-primary">카드 등록</button>
+            </div>
+          </form>
+        </div>
+    </div>
+  </div>
+
+    <!-- FAB: 에이전트 추가 -->
+    <div class="agent-add-fab">
+      <button
+        class="btn-primary add-icon-button"
+        id="open-add-agent-btn"
+        type="button"
+      >
+        <span class="material-symbols-outlined icon-add" aria-hidden="true"
+          >add</span
+        >
+        <span class="sr-only">에이전트 카드 추가</span>
+      </button>
+    </div>
+
+    <div class="modal-overlay hidden" id="token-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="token-modal-title">
+        <div class="modal-header">
+          <h3 id="token-modal-title">관리자 JWT 입력</h3>
+          <button class="btn-secondary" id="token-modal-close" type="button">닫기</button>
+        </div>
+        <div class="modal-content">
+          <form id="token-form" class="modal-form">
+            <label for="token-input">관리자 JWT 토큰</label>
+            <input
+              type="password"
+              id="token-input"
+              placeholder="Bearer 토큰을 붙여넣어주세요"
+              autocomplete="off"
+            />
+            <div class="form-actions">
+              <span id="token-status" class="status-message" role="status"></span>
+              <button type="submit" class="btn-primary">검증</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </body>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const listEl = document.getElementById('agent-list');
-      const logEl = document.getElementById('registry-log');
-
-      // Render helpers
-      function renderAgent(name, status) {
-        const item = document.createElement('div');
-        item.className = 'agent-list-item';
-        const strong = document.createElement('strong');
-        strong.textContent = name || 'Unknown';
-        const badge = document.createElement('span');
-        badge.className = 'status-active';
-        badge.textContent = status || 'Active';
-        item.appendChild(strong);
-        item.appendChild(badge);
-        return item;
-      }
-
-      function renderLog(entry) {
-        const li = document.createElement('li');
-        li.className = 'threat-item ' + (entry.ok ? 'log-success' : 'log-error');
-        const t = entry.timeText || (entry.timeIso ? new Date(entry.timeIso).toLocaleTimeString('ko-KR', { hour12: false }) : '');
-        li.textContent = `${entry.message || ''} (${t})`;
-        return li;
-      }
-
-      // Load agents from backend (data/agents.json via /api/agents)
-      try {
-        const res = await fetch('/api/agents');
-        const data = await res.json();
-        if (Array.isArray(data.agents)) {
-          listEl.innerHTML = '';
-          data.agents.forEach(a => {
-            const name = (a && a.card && a.card.name) || a.name || 'Unknown';
-            const status = a && a.status ? a.status : 'Active';
-            listEl.appendChild(renderAgent(name, status));
-          });
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      // Load logs from backend (data/log.json via /api/logs)
-      try {
-        const res = await fetch('/api/logs');
-        const data = await res.json();
-        if (Array.isArray(data.logs)) {
-          logEl.innerHTML = '';
-          data.logs.forEach(l => logEl.appendChild(renderLog(l)));
-        }
-      } catch (e) {
-        // ignore
-      }
-    });
-  </script>
-  </html>
-
-
-  <script>
-    // 위의 핸들러로 일원화되어 별도 오버라이드 불필요
-  </script>
-  </html>
+</html>  

@@ -46,6 +46,13 @@ def create_app() -> Flask:
             return send_from_directory(app.static_folder, 'dashboard.html')
         return send_from_directory(app.static_folder, 'index.html')
 
+    @app.get('/dashboard')
+    def dashboard_page():
+        target = os.path.join(app.static_folder, 'dashboard.html')
+        if os.path.exists(target):
+            return send_from_directory(app.static_folder, 'dashboard.html')
+        return send_from_directory(app.static_folder, 'index.html')
+
     @app.get('/agents')
     def agents_page():
         target_idx = os.path.join(app.static_folder, 'agents', 'index.html')

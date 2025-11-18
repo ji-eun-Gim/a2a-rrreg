@@ -1,98 +1,139 @@
+from datetime import datetime, timezone
+
 from flask import jsonify, request
 
 from . import api_bp
 from ..core import repo
-from ..core.auth import require_admin, require_jwt
 from ..core.logging import append_log
-from ..core.tenants import extract_tenants
-from ..core.validators import validate_card_basic
+
+_POLICY_LIST_KEYS = [
+    "prompt_validation_rulesets",
+    "tool_validation_rulesets",
+    "response_filtering_rulesets",
+]
 
 
-# --- 에이전트 목록 조회 ---
-@api_bp.get('/agents')
-def list_agents():
-    """등록된 모든 에이전트를 표준 메타데이터 형태로 반환."""
-    err = require_jwt()
-    if err:
-        return err
-    err = require_admin()
-    if err:
-        return err
+def _ensure_list(value):
+    if isinstance(value, list):
+        return [str(item) for item in value if item is not None]
+    if isinstance(value, str):
+        trimmed = value.strip()
+        return [trimmed] if trimmed else []
+    return []
 
-    raw = repo.load_agents()
-    agents = []
-    for item in raw:
-        if isinstance(item, dict) and isinstance(item.get('card'), dict):
-            card = item['card']
-            name = card.get('name') if isinstance(card.get('name'), str) else None
-            agents.append(
+
+def _normalize_policy(source, fallback=None):
+    fallback = fallback or {}
+    policy = {
+        "enabled": bool(source.get("enabled")) if source.get("enabled") is not None else bool(fallback.get("enabled", True)),
+    }
+    for key in _POLICY_LIST_KEYS:
+        if key in source:
+            policy[key] = _ensure_list(source.get(key))
+        else:
+            policy[key] = _ensure_list(fallback.get(key))
+    return policy
+
+
+def _build_plugins(agent, card):
+    plugins = agent.get("plugins")
+    if isinstance(plugins, list) and plugins:
+        return plugins
+    skills = card.get("skills")
+    if isinstance(skills, list):
+        derived = []
+        for skill in skills:
+            if not isinstance(skill, dict):
+                continue
+            name = skill.get("name") or skill.get("id") or "plugin"
+            derived.append(
                 {
-                    "agent_id": item.get('agent_id'),
-                    "etag": item.get('etag'),
-                    "versionID": item.get('versionID'),
-                    "status": item.get('status', 'Active'),
-                    "name": name or 'Unknown',
-                    "card": card,
-                    "tenants": item.get('tenants') if isinstance(item.get('tenants'), list) else [],
-                    "create_ts": item.get('create_ts'),
-                    "update_ts": item.get('update_ts'),
-                    "delete_ts": item.get('delete_ts'),
+                    "name": name,
+                    "type": skill.get("type") or "skill",
+                    "status": skill.get("status") or "Active",
                 }
             )
-        else:
-            agents.append(item)
-    return jsonify({"agents": agents})
+        if derived:
+            return derived
+    return []
 
 
-# --- 간단 에이전트 등록 ---
-@api_bp.post('/agents')
-def add_agent():
-    """관리자 전용 간단 등록 API."""
-    err = require_jwt()
-    if err:
-        return err
-    err = require_admin()
-    if err:
-        return err
+def _normalize_agent(agent):
+    if not isinstance(agent, dict):
+        return agent
 
-    body = request.get_json(silent=True) or {}
-    card = body.get('card') if isinstance(body.get('card'), dict) else body
+    card = agent.get("card") if isinstance(agent.get("card"), dict) else {}
+    name = card.get("name") or agent.get("name") or "Unknown"
+    description = card.get("description") or agent.get("description") or ""
+    status = agent.get("status") or "Active"
+    policy = _normalize_policy(agent.get("policy", {}), agent.get("policy", {}))
 
-    if not isinstance(card, dict):
-        return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": ['card is required']}), 422
+    normalized = {
+        "agent_id": agent.get("agent_id") or name,
+        "etag": agent.get("etag"),
+        "versionID": agent.get("versionID"),
+        "card": card,
+        "status": status,
+        "name": name,
+        "description": description,
+        "tenants": agent.get("tenants") if isinstance(agent.get("tenants"), list) else [],
+        "create_ts": agent.get("create_ts"),
+        "update_ts": agent.get("update_ts"),
+        "created_at": agent.get("created_at") or agent.get("create_ts"),
+        "updated_at": agent.get("updated_at") or agent.get("update_ts"),
+        "publisher_jws": agent.get("publisher_jws"),
+        "registrant": agent.get("registrant"),
+        "policy": policy,
+        "plugins": _build_plugins(agent, card),
+    }
+    return normalized
 
-    tenants = []
-    if isinstance(body, dict):
-        tenants = extract_tenants(body.get('tenants'))
-        if not tenants:
-            # 과거 클라이언트가 metadata.tenants 에 값을 넣는 경우 보조 파싱
-            tenants = extract_tenants(body.get('metadata'))
 
-    ok, errors = validate_card_basic(card)
-    if not ok:
-        return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
-
+def _find_agent_index(agent_id):
     agents = repo.load_agents()
-    name = str(card.get('name', '') or '')
-    name_lc = name.lower()
-    # name 기준 중복 확인
-    for existing in agents:
-        # 각 레코드를 순회하며 name 을 꺼내 비교
-        existing_name = None
-        if isinstance(existing, dict):
-            if isinstance(existing.get('card'), dict):
-                existing_name = existing['card'].get('name')
-            else:
-                existing_name = existing.get('name')
-        if isinstance(existing_name, str) and existing_name.lower() == name_lc:
-            return jsonify({"error": 'Agent already exists'}), 409
+    for index, agent in enumerate(agents):
+        if agent.get("agent_id") == agent_id:
+            return index, agent, agents
+    return None, None, agents
 
-    agents.append({"card": card, "status": 'Active', "tenants": tenants})
-    repo.save_agents(agents)
 
+@api_bp.get('/agents')
+def list_agents():
+    """등록된 에이전트 목록을 반환."""
+    agents = repo.load_agents()
+    normalized = [_normalize_agent(agent) for agent in agents]
     try:
-        append_log(f"에이전트 추가 성공 (201 Created): {name}", True)
+        ip = request.remote_addr or 'unknown'
+        append_log(f'에이전트 조회 성공 (IP={ip})', True, capture_client_ip=True, client_ip=ip)
     except Exception:
         pass
+    return jsonify(normalized)
 
-    return jsonify({"agent": {"name": name, "status": 'Active', "card": card, "tenants": tenants}}), 201
+
+@api_bp.get('/agents/<path:agent_id>')
+def get_agent(agent_id):
+    """특정 에이전트 메타데이터를 반환."""
+    index, agent, agents = _find_agent_index(agent_id)
+    if agent is None:
+        return jsonify({"error": 'agent not found'}), 404
+    return jsonify(_normalize_agent(agent))
+
+
+@api_bp.put('/agents/<path:agent_id>/policy')
+def update_agent_policy(agent_id):
+    """에이전트에 연결된 policy 룰셋을 업데이트합니다."""
+    index, agent, agents = _find_agent_index(agent_id)
+    if agent is None:
+        return jsonify({"error": 'agent not found'}), 404
+
+    body = request.get_json(silent=True) or {}
+    existing_policy = agent.get("policy", {})
+    policy = _normalize_policy(body, existing_policy)
+    agent["policy"] = policy
+    now = datetime.now(timezone.utc).isoformat()
+    agent["update_ts"] = now
+    agent["updated_at"] = now
+
+    agents[index] = agent
+    repo.save_agents(agents)
+    return jsonify({"policy": policy})

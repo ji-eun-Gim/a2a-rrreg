@@ -1,0 +1,394 @@
+const API_BASE = window.location.origin;
+
+let rulesets = [];
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadRulesets();
+  bindControls();
+});
+
+function getTypeLabel(type = '') {
+  const map = {
+    prompt_validation: '프롬프트 검증',
+    tool_validation: '툴 검증',
+    response_filtering: '응답 필터링',
+  };
+  return map[type] || type || '미확인';
+}
+
+function getStatusLabel(enabled) {
+  return enabled ? '사용 중' : '중지';
+}
+
+function bindControls() {
+  const createButton = document.getElementById('open-create-ruleset');
+  if (createButton) {
+    createButton.addEventListener('click', () => openFormModal());
+  }
+
+  const modal = document.getElementById('ruleset-modal');
+  const closeButton = document.getElementById('close-ruleset-modal');
+  if (modal) {
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+    setupModalInteractivity(modal);
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+  }
+  if (closeButton) {
+    closeButton.addEventListener('click', closeModal);
+  }
+}
+
+async function loadRulesets() {
+  try {
+    const response = await fetch(`${API_BASE}/api/rulesets`);
+    if (!response.ok) throw new Error('룰셋을 불러오지 못했습니다');
+    rulesets = await response.json();
+    renderRulesetTable();
+  } catch (error) {
+    console.error('룰셋을 불러오지 못했습니다', error);
+    const tbody = document.getElementById('ruleset-table-body');
+    if (tbody) {
+      tbody.innerHTML = '<tr><td colspan="6" class="empty-state">룰셋을 불러올 수 없습니다.</td></tr>';
+    }
+  }
+}
+
+function renderRulesetTable() {
+  const tbody = document.getElementById('ruleset-table-body');
+  const template = document.getElementById('ruleset-row-template');
+  if (!tbody || !template) return;
+
+  tbody.innerHTML = '';
+
+  if (!rulesets || rulesets.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">등록된 룰셋이 없습니다.</td></tr>';
+    return;
+  }
+
+  rulesets
+    .slice()
+    .sort((a, b) => (a.name || a.ruleset_id).localeCompare(b.name || b.ruleset_id))
+    .forEach((ruleset) => {
+      const clone = template.content.cloneNode(true);
+      clone.querySelector('.ruleset-id').textContent = ruleset.ruleset_id;
+      clone.querySelector('.ruleset-name').textContent = ruleset.name || ruleset.ruleset_id;
+      clone.querySelector('.ruleset-type').textContent = getTypeLabel(ruleset.type);
+
+      const statusCell = clone.querySelector('.ruleset-status');
+      if (statusCell) {
+        const chip = document.createElement('span');
+        chip.className = `status-chip ${ruleset.enabled ? 'status-active' : 'status-inactive'}`;
+        chip.textContent = getStatusLabel(ruleset.enabled);
+        statusCell.appendChild(chip);
+      }
+
+      clone.querySelector('.ruleset-updated').textContent = formatDate(ruleset.updated_at || ruleset.created_at);
+
+      const actionCell = clone.querySelector('.ruleset-actions');
+      if (actionCell) {
+        actionCell.querySelector('[data-action="view"]').addEventListener('click', () => openDetailModal(ruleset));
+        actionCell.querySelector('[data-action="edit"]').addEventListener('click', () => openFormModal(ruleset));
+        actionCell.querySelector('[data-action="delete"]').addEventListener('click', () => confirmDelete(ruleset));
+      }
+
+      tbody.appendChild(clone);
+    });
+}
+
+function formatDate(dateString) {
+  if (!dateString) return '없음';
+  return new Date(dateString).toLocaleString();
+}
+
+function openDetailModal(ruleset) {
+  const modal = document.getElementById('ruleset-modal');
+  const title = document.getElementById('ruleset-modal-title');
+  const body = document.getElementById('ruleset-modal-body');
+  const template = document.getElementById('ruleset-detail-template');
+  if (!modal || !title || !body || !template) return;
+
+  body.innerHTML = '';
+  title.textContent = ruleset.name || ruleset.ruleset_id;
+
+  const node = template.content.cloneNode(true);
+  const wrapper = node.querySelector('.ruleset-detail');
+  wrapper.querySelector('[data-field="ruleset_id"]').textContent = ruleset.ruleset_id;
+  wrapper.querySelector('[data-field="type"]').textContent = getTypeLabel(ruleset.type);
+  wrapper.querySelector('[data-field="status"]').textContent = getStatusLabel(ruleset.enabled);
+  wrapper.querySelector('[data-field="updated"]').textContent = formatDate(ruleset.updated_at || ruleset.created_at);
+  wrapper.querySelector('[data-field="description"]').textContent = ruleset.description || '설명이 제공되지 않았습니다.';
+
+  const configuration = { ...ruleset };
+  wrapper.querySelector('[data-field="json"]').textContent = JSON.stringify(configuration, null, 2);
+
+  body.appendChild(wrapper);
+  openModal();
+}
+
+function openFormModal(ruleset) {
+  const modal = document.getElementById('ruleset-modal');
+  const title = document.getElementById('ruleset-modal-title');
+  const body = document.getElementById('ruleset-modal-body');
+  const template = document.getElementById('ruleset-form-template');
+  if (!modal || !title || !body || !template) return;
+
+  body.innerHTML = '';
+  const node = template.content.cloneNode(true);
+  const form = node.querySelector('#ruleset-form');
+  const typeSelect = node.querySelector('#ruleset-type');
+  const statusMessage = node.querySelector('#ruleset-form-status');
+
+  if (ruleset) {
+    title.textContent = '룰셋 수정';
+    populateForm(form, ruleset);
+    form.dataset.mode = 'edit';
+  } else {
+    title.textContent = '룰셋 생성';
+    form.dataset.mode = 'create';
+  }
+
+  if (typeSelect) {
+    typeSelect.addEventListener('change', () => toggleTypeFields(typeSelect.value, form));
+    toggleTypeFields(typeSelect.value, form);
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    await submitForm(form, statusMessage, ruleset);
+  });
+
+  body.appendChild(node);
+  openModal();
+}
+
+function populateForm(form, ruleset) {
+  form.querySelector('#ruleset-id').value = ruleset.ruleset_id;
+  form.querySelector('#ruleset-id').disabled = true;
+  form.querySelector('#ruleset-name').value = ruleset.name || '';
+  form.querySelector('#ruleset-type').value = ruleset.type || 'prompt_validation';
+  form.querySelector('#ruleset-enabled').checked = ruleset.enabled !== false;
+  form.querySelector('#ruleset-description').value = ruleset.description || '';
+  form.querySelector('#ruleset-system-prompt').value = ruleset.system_prompt || '';
+  form.querySelector('#ruleset-model').value = ruleset.model || '';
+  form.querySelector('#ruleset-tool-name').value = ruleset.tool_name || '';
+  form.querySelector('#ruleset-rules').value = ruleset.rules ? JSON.stringify(ruleset.rules, null, 2) : '';
+  form.querySelector('#ruleset-blocked').value = ruleset.blocked_keywords
+    ? JSON.stringify(ruleset.blocked_keywords, null, 2)
+    : '';
+}
+
+function toggleTypeFields(type, form) {
+  const fields = form.querySelectorAll('[data-field]');
+  fields.forEach((group) => {
+    const fieldType = group.dataset.field;
+    group.classList.toggle('hidden', fieldType && fieldType !== type);
+  });
+}
+
+async function submitForm(form, statusElement, existing) {
+  const submitButton = form.querySelector('button[type="submit"]');
+  const formData = new FormData(form);
+
+  const payload = {
+    ruleset_id: formData.get('ruleset_id') || existing?.ruleset_id,
+    name: formData.get('name'),
+    type: formData.get('type'),
+    description: formData.get('description'),
+    enabled: formData.get('enabled') === 'on',
+  };
+
+  if (payload.type === 'prompt_validation') {
+    payload.system_prompt = formData.get('system_prompt');
+    payload.model = formData.get('model');
+  } else if (payload.type === 'tool_validation') {
+    payload.tool_name = formData.get('tool_name');
+    payload.rules = safeJsonParse(formData.get('rules')) || {};
+  } else if (payload.type === 'response_filtering') {
+    payload.blocked_keywords = safeJsonParse(formData.get('blocked_keywords')) || [];
+  }
+
+  if (statusElement) {
+    statusElement.textContent = '저장 중…';
+    statusElement.classList.remove('error');
+  }
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = '저장 중…';
+  }
+
+  try {
+    const method = existing ? 'PUT' : 'POST';
+    const url = existing
+      ? `${API_BASE}/api/rulesets/${encodeURIComponent(existing.ruleset_id)}`
+      : `${API_BASE}/api/rulesets`;
+
+    const response = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) throw new Error('룰셋을 저장하지 못했습니다');
+
+    await loadRulesets();
+    closeModal();
+  } catch (error) {
+    console.error('룰셋 저장에 실패했습니다', error);
+    if (statusElement) {
+      statusElement.textContent = '룰셋을 저장할 수 없습니다. 입력 값을 확인하세요.';
+      statusElement.classList.add('error');
+    }
+  } finally {
+    if (submitButton) {
+      submitButton.disabled = false;
+      submitButton.textContent = '룰셋 저장';
+    }
+  }
+}
+
+function safeJsonParse(value) {
+  if (!value) return undefined;
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    console.warn('올바르지 않은 JSON 입력', value);
+    return undefined;
+  }
+}
+
+function confirmDelete(ruleset) {
+  if (!confirm(`룰셋 ${ruleset.ruleset_id}을(를) 삭제할까요?`)) return;
+  deleteRuleset(ruleset.ruleset_id);
+}
+
+async function deleteRuleset(rulesetId) {
+  try {
+    const response = await fetch(`${API_BASE}/api/rulesets/${encodeURIComponent(rulesetId)}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error('룰셋을 삭제하지 못했습니다');
+    await loadRulesets();
+  } catch (error) {
+    console.error('룰셋 삭제에 실패했습니다', error);
+    alert('룰셋을 삭제하지 못했습니다.');
+  }
+}
+
+function openModal() {
+  const modal = document.getElementById('ruleset-modal');
+  if (modal) {
+    const windowElement = modal.querySelector('.modal');
+    centerModal(windowElement);
+    modal.classList.remove('hidden');
+  }
+}
+
+function closeModal() {
+  const modal = document.getElementById('ruleset-modal');
+  if (modal) {
+    const windowElement = modal.querySelector('.modal');
+    if (windowElement) {
+      windowElement.classList.remove('is-dragging');
+      centerModal(windowElement);
+    }
+    modal.classList.add('hidden');
+  }
+}
+
+function setupModalInteractivity(overlay) {
+  const modalWindow = overlay.querySelector('.modal');
+  const header = modalWindow?.querySelector('.modal-header');
+  if (!modalWindow || !header) return;
+
+  const state = {
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    startLeft: 0,
+    startTop: 0,
+  };
+
+  const clampPosition = (left, top) => {
+    const margin = 12;
+    const width = modalWindow.offsetWidth;
+    const height = modalWindow.offsetHeight;
+    const maxLeft = window.innerWidth - margin - width;
+    const maxTop = window.innerHeight - margin - height;
+
+    if (maxLeft < margin || maxTop < margin) {
+      centerModal(modalWindow);
+      return;
+    }
+
+    const clampedLeft = Math.min(Math.max(left, margin), maxLeft);
+    const clampedTop = Math.min(Math.max(top, margin), maxTop);
+
+    modalWindow.style.left = `${clampedLeft}px`;
+    modalWindow.style.top = `${clampedTop}px`;
+  };
+
+  const handlePointerMove = (event) => {
+    if (state.pointerId === null || event.pointerId !== state.pointerId) return;
+    const nextLeft = state.startLeft + (event.clientX - state.startX);
+    const nextTop = state.startTop + (event.clientY - state.startY);
+    clampPosition(nextLeft, nextTop);
+  };
+
+  const stopDrag = (event) => {
+    if (state.pointerId === null || event.pointerId !== state.pointerId) return;
+    header.releasePointerCapture(state.pointerId);
+    state.pointerId = null;
+    modalWindow.classList.remove('is-dragging');
+  };
+
+  header.addEventListener('pointerdown', (event) => {
+    if (event.button !== 0) return;
+
+    const rect = modalWindow.getBoundingClientRect();
+    modalWindow.dataset.position = 'custom';
+    modalWindow.style.transform = 'none';
+    modalWindow.style.left = `${rect.left}px`;
+    modalWindow.style.top = `${rect.top}px`;
+
+    state.pointerId = event.pointerId;
+    state.startX = event.clientX;
+    state.startY = event.clientY;
+    state.startLeft = rect.left;
+    state.startTop = rect.top;
+
+    modalWindow.classList.add('is-dragging');
+    header.setPointerCapture(state.pointerId);
+    event.preventDefault();
+  });
+
+  header.addEventListener('pointermove', handlePointerMove);
+  header.addEventListener('pointerup', stopDrag);
+  header.addEventListener('pointercancel', stopDrag);
+  header.addEventListener('dblclick', () => centerModal(modalWindow));
+
+  window.addEventListener('resize', () => {
+    if (overlay.classList.contains('hidden')) return;
+    if (modalWindow.dataset.position === 'custom') {
+      const rect = modalWindow.getBoundingClientRect();
+      clampPosition(rect.left, rect.top);
+    } else {
+      centerModal(modalWindow);
+    }
+  });
+}
+
+function centerModal(modalWindow) {
+  if (!modalWindow) return;
+  modalWindow.dataset.position = 'centered';
+  modalWindow.style.transform = 'translate(-50%, -50%)';
+  modalWindow.style.left = '50%';
+  modalWindow.style.top = '50%';
+}

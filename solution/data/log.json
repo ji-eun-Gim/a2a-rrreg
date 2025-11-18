@@ -1,20 +1,30 @@
 [
   {
-    "message": "에이전트 추가 성공 (201 Created): CustomerAgent",
+    "message": "에이전트 조회 성공 (IP=127.0.0.1)",
     "ok": true,
-    "timeIso": "2025-11-17T15:30:41.892890",
-    "timeText": "15시 30분 41초"
+    "timeIso": "2025-11-18T20:22:38.615713",
+    "timeText": "20시 22분 38초",
+    "clientIp": "127.0.0.1"
   },
   {
-    "message": "스키마 검증 실패 : 필수 필드 누락 (422 Unprocessable Entity)",
-    "ok": false,
-    "timeIso": "2025-11-17T15:30:21.925599",
-    "timeText": "15시 30분 21초"
+    "message": "에이전트 조회 성공 (IP=127.0.0.1)",
+    "ok": true,
+    "timeIso": "2025-11-18T20:21:55.108062",
+    "timeText": "20시 21분 55초",
+    "clientIp": "127.0.0.1"
   },
   {
-    "message": "스키마 검증 실패 : 시그니처 필드의 JWS 불일치 (498 Invalid Token)",
-    "ok": false,
-    "timeIso": "2025-11-17T15:29:26.814779",
-    "timeText": "15시 29분 26초"
+    "message": "에이전트 조회 성공 (IP=127.0.0.1)",
+    "ok": true,
+    "timeIso": "2025-11-18T20:18:26.884150",
+    "timeText": "20시 18분 26초",
+    "clientIp": "127.0.0.1"
+  },
+  {
+    "message": "에이전트 조회 성공 (200 OK): scope=customer-service, returned=2",
+    "ok": true,
+    "timeIso": "2025-11-18T16:45:09.926852",
+    "timeText": "16시 45분 09초",
+    "clientIp": "127.0.0.1"
   }
 ]

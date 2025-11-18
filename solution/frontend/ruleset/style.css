@@ -1,347 +1,189 @@
-﻿/* === CSS 蹂??(?뚮쭏) === */
-:root {
-  --bg-dark-primary: #1a1a2e; /* 留ㅼ슦 ?대몢???ㅼ씠鍮?(硫붿씤 諛곌꼍) */
-  --bg-dark-secondary: #1e1e3f; /* ?댁쭩 諛앹? ?ㅼ씠鍮?(移대뱶 諛곌꼍) */
-  --border-color: #3a3a5f; /* ?뚮몢由??됱긽 */
-  --text-primary: #f0f0f5; /* 湲곕낯 ?띿뒪??*/
-  --text-secondary: #aab; /* 蹂댁“ ?띿뒪??*/
-  --accent-primary: #00aaff; /* ?ъ씤???됱긽 (釉붾（) */
-  --accent-hover: #0088cc; /* ?ъ씤???몃쾭 */
-  --critical-red: #ff4d4d; /* ?꾪삊 (Critical) */
-  --warning-yellow: #ffaa00; /* ?꾪삊 (Warning) */
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
+.ruleset-widget .table-container {
+  overflow: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* === 湲곕낯 ?ㅽ???=== */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html,
-body {
-  height: 100%;
-  font-family: var(--font-family);
-  background-color: var(--bg-dark-primary);
-  color: var(--text-primary);
-  font-size: 16px;
-}
-
-/* === 硫붿씤 ?덉씠?꾩썐 === */
-.app-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.app-header {
-  display: flex;
-  align-items: center;
-  padding: 0 2rem;
-  height: 60px;
-  background-color: var(--bg-dark-secondary);
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-}
-
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--accent-primary);
-  margin-right: 2rem;
-}
-
-/* === ?ㅻ퉬寃뚯씠??(?? === */
-.main-nav {
-  display: flex;
-  height: 100%;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-bottom: 3px solid transparent;
-  transition: color 0.2s, border-bottom-color 0.2s;
-  cursor: pointer;
-}
-
-.nav-link:hover {
-  color: var(--text-primary);
-}
-
-.nav-link.active {
-  color: var(--accent-primary);
-  border-bottom-color: var(--accent-primary);
-}
-
-/* === 硫붿씤 而⑦뀗痢??곸뿭 === */
-.content-area {
-  flex-grow: 1;
-  padding: 2rem;
-  overflow-y: auto; /* 而⑦뀗痢좉? 留롮븘吏硫??ㅽ겕濡?*/
-}
-
-.content-page {
-  display: none;
-}
-
-.content-page.active {
-  display: block;
-}
-
-/* === ?꾩젽 湲곕낯 ?ㅽ???=== */
-.widget {
-  background-color: var(--bg-dark-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-  margin-bottom: 2rem; /* Grid ?ъ슜 ??gap?쇰줈 ?泥? */
-}
-
-/* Grid ?덉씠?꾩썐 ?댁쓽 ?꾩젽? margin-bottom ?쒓굅 */
-.content-page.active[id="ruleset"] {
-  margin-bottom: 0;
-}
-.content-page.active[id="ruleset"] .widget {
-  margin-bottom: 0;
-}
-
-.widget:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 170, 255, 0.1);
-}
-
-.widget-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* === ?꾩젽 ?ㅻ뜑 + 踰꾪듉 (異붽??? === */
-.widget-header-with-button {
-  display: flex;
-  justify-content: space-between; /* ?쒕ぉ(醫?怨?踰꾪듉(????遺꾨━ */
-  align-items: center;
-
-  /* 湲곗〈 .widget-title???ㅽ??쇱쓣 ?닿납?쇰줈 ?대룞 */
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* ?섑띁 ?덉쓽 ?쒕ぉ? ?щ갚/?뚮몢由??쒓굅 */
-.widget-header-with-button .widget-title {
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: none;
-}
-
-/* ?곹깭 ?쒖떆 (Active) */
-.status-active {
-  font-size: 0.9em;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 500;
-  color: #4dff4d; /* 諛앹? ?뱀깋 */
-  background-color: rgba(77, 255, 77, 0.1);
-  border: 1px solid rgba(77, 255, 77, 0.3);
-}
-
-/* === 踰꾪듉 ?ㅽ???(異붽??? === */
-.btn-primary,
-.btn-secondary {
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
-}
-
-.btn-primary {
-  background-color: var(--accent-primary);
-  color: var(--bg-dark-primary); /* 踰꾪듉 ?띿뒪?몃뒗 ?대몼寃?*/
-}
-
-.btn-primary:hover {
-  background-color: var(--accent-hover);
-  box-shadow: 0 4px 12px rgba(0, 170, 255, 0.2);
-}
-
-.btn-secondary {
-  background-color: var(--border-color);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background-color: #4a4a6f; /* --border-color 蹂대떎 ?댁쭩 諛앷쾶 */
-}
-
-/* === Ruleset ?섏씠吏 ?뚯씠釉??ㅽ???(異붽??? === */
 .ruleset-table {
   width: 100%;
-  border-collapse: collapse; /* ?뚮몢由?寃뱀묠 諛⑹? */
+  border-collapse: collapse;
+  min-width: 640px;
 }
 
 .ruleset-table th,
 .ruleset-table td {
-  padding: 0.85rem 0.75rem; /* 濡쒓렇 ?뚯씠釉붾낫???쎄컙 ?ъ쑀 ?덇쾶 */
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: left;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .ruleset-table th {
-  background-color: #2a2a4f; /* ?ㅻ뜑 諛곌꼍??*/
-  font-weight: 600;
-}
-
-/* ?뚯씠釉????몃쾭 ?④낵 諛??좏깮 ?④낵 */
-.ruleset-table tbody tr {
-  cursor: pointer;
-  transition: background-color 0.2s;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(12px);
+  z-index: 1;
 }
 
 .ruleset-table tbody tr:hover {
-  background-color: #2a2a4f; /* ?몃쾭 ??諛곌꼍??*/
+  background: rgba(101, 209, 255, 0.08);
 }
 
-.ruleset-table tbody tr.selected {
-  background-color: var(--accent-primary); /* ?좏깮 ??諛곌꼍??*/
-  color: var(--bg-dark-primary); /* ?좏깮 ??湲?먯깋 */
-  font-weight: 500;
+.ruleset-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
-/* ?좏깮???됱쓽 ?곹깭 諛곗? ?됱긽 諛섏쟾 */
-.ruleset-table tbody tr.selected .status-active,
-.ruleset-table tbody tr.selected .status-disabled {
-  background-color: var(--text-primary);
-  color: var(--accent-primary);
-  border-color: var(--accent-primary);
+.btn-small {
+  padding: 0.35rem 0.75rem;
 }
 
-/* 鍮꾪솢???곹깭 諛곗? (異붽??? */
-.status-disabled {
-  font-size: 0.9em;
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  background-color: rgba(170, 170, 187, 0.1);
-  border: 1px solid rgba(170, 170, 187, 0.3);
+.ruleset-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
-/* === 4. 猷곗뀑 ?섏씠吏 (CSS Grid) (異붽??? === */
-#ruleset.active {
+.form-grid {
   display: grid;
-  /* 2:3 鍮꾩쑉濡?醫뚯슦 遺꾪븷 (由ъ뒪???곸꽭) */
-  grid-template-columns: 2fr 3fr;
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
 }
 
-/* * * === 5. 紐⑤떖 (Dialog) ?ㅽ???(?좉퇋 異붽?) === 
- * */
-
-#ruleModal {
-  /* [1] ?뚮쭏 ?곸슜: 湲곗〈 ?뚮쭏 蹂?섎? ?ъ슜?⑸땲??
-  */
-  background-color: var(--bg-dark-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 170, 255, 0.1);
-  padding: 1.5rem;
-  width: 90%; /* 紐⑤컮?쇰룄 怨좊젮 */
-  max-width: 450px; /* 理쒕? ?덈퉬 怨좎젙 */
-
-  /* [2] ?붾㈃ ?뺤쨷???뺣젹 (?닿쾶 ?듭떖?낅땲?? 
-  */
-  top: 50%;
-  left: 50%; /* ?몚 [1] ??以꾩쓣 異붽??섏꽭??*/
-  transform: translate(-50%, -50%);
-}
-
-/* 紐⑤떖???댁쓣 ???ㅼ뿉 源붾━???대몢??諛곌꼍 */
-#ruleModal::backdrop {
-  background-color: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(2px);
-}
-
-/* 紐⑤떖 ?대? ???ㅽ???*/
-#ruleForm {
+.form-group {
   display: flex;
   flex-direction: column;
-  gap: 1rem; /* ???붿냼 ?ъ씠??媛꾧꺽 */
+  gap: 0.5rem;
 }
-#ruleForm div {
+
+.form-group.checkbox {
+  justify-content: flex-end;
+}
+
+.form-group.checkbox label {
   display: flex;
-  flex-direction: column;
-}
-#ruleForm label {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-/* ???낅젰移?(?뚮쭏 ?곸슜) */
-#ruleForm input,
-#ruleForm select {
-  padding: 0.75rem;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-dark-primary);
-  color: var(--text-primary);
-  border-radius: 5px;
-  font-size: 1rem;
-}
-
-#ruleForm input:focus,
-#ruleForm select:focus {
-  outline: none;
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(0, 170, 255, 0.3);
-}
-
-/* 紐⑤떖 ?대? 踰꾪듉 ?뺣젹 */
-.modal-buttons {
-  display: flex;
-  justify-content: flex-end; /* 踰꾪듉???ㅻⅨ履쎌쑝濡?*/
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-/* 버튼 & 타이틀 행 (공통) */
-.btn {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-dark-primary);
-  color: var(--text-primary);
+  gap: 0.5rem;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
 }
-.btn:hover { background: #2a2a4f; }
-.btn:active { transform: translateY(1px); }
-.btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
-.btn.icon-only { padding: 0; width: 36px; height: 36px; }
-.btn-primary { border-color: rgba(0,170,255,.35); background: rgba(0,170,255,.12); color: var(--accent-primary); }
-.btn-primary:hover { background: rgba(0,170,255,.2); border-color: rgba(0,170,255,.6); }
 
-.widget-title-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; }
-.widget-title-row .widget-title { margin: 0; padding: 0; border: 0; }
-.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24; font-size: 20px; line-height: 1; }
+.ruleset-form textarea {
+  min-height: 140px;
+  font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.ruleset-form textarea#ruleset-system-prompt {
+  min-height: 160px;
+  font-family: inherit;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ruleset-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+}
+
+.detail-grid ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.detail-json pre {
+  background: rgba(0, 0, 0, 0.38);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  max-height: 320px;
+  overflow: auto;
+  font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 12, 24, 0.7);
+  z-index: 1000;
+  display: none;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-overlay:not(.hidden) {
+  display: block;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-surface);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  min-width: 320px;
+  width: min(780px, 92vw);
+  max-height: 84vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-lg);
+  resize: both;
+  overflow: hidden;
+}
+
+.modal.is-dragging {
+  cursor: grabbing;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: move;
+  user-select: none;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-content {
+  flex: 1;
+  overflow: auto;
+}
+
+@media (max-width: 768px) {
+  .ruleset-table {
+    min-width: 100%;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+}

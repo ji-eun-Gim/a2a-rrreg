@@ -1,95 +1,144 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>A2A Security Dashboard - Logs</title>
+    <title>A2A Security Dashboard - 로그</title>
     <link rel="stylesheet" href="../style.css" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=refresh,add" />
+    <link rel="stylesheet" href="/logs/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/minisearch@6.1.0/dist/umd/index.min.js" defer></script>
+    <script src="/logs/logs.js" defer></script>
   </head>
   <body>
-    <div class="app-container">
+    <div class="app-container" data-page="logs">
       <header class="app-header">
         <div class="logo">A2A SECURE</div>
         <nav class="main-nav">
-          <a href="/" class="nav-link">Dashboard</a>
-          <a href="/agents" class="nav-link">Agents</a>
-          <a href="/logs" class="nav-link active">Logs</a>
-          <a href="/ruleset" class="nav-link">Ruleset</a>
+          <a href="/dashboard" class="nav-link">대시보드</a>
+          <a href="/agents" class="nav-link">에이전트</a>
+          <a href="/logs" class="nav-link active">로그</a>
+          <a href="/ruleset" class="nav-link">룰셋</a>
         </nav>
       </header>
 
       <main class="content-area">
-        <section id="logs" class="content-page active">
-          <div class="widget widget-log-filter">
-            <div class="widget-title-row">
-              <h3 class="widget-title">濡쒓렇 ?꾪꽣</h3>
-              <button class="btn icon-only" title="?덈줈怨좎묠" id="logs-refresh-btn">
-                <span class="material-symbols-outlined">refresh</span>
-              </button>
-            </div>
-            <div style="color: var(--text-secondary)">[ 湲곌컙/?먯씠?꾪듃 ID ?꾪꽣 ?곸뿭 ]</div>
-          </div>
+        <div class="content-wrapper">
+          <section id="logs" class="content-page active">
+            <div class="logs-grid">
+              <article class="widget">
+                <div class="widget-header-with-button">
+                  <h3 class="widget-title">검색 및 필터</h3>
+                  <div class="widget-actions">
+                    <button class="btn-secondary" id="refresh-logs">새로고침</button>
+                  </div>
+                </div>
 
-          <div class="widget widget-log-list">
-            <div class="widget-title-row">
-              <h3 class="widget-title">?꾩껜 濡쒓렇 由ъ뒪??(Table)</h3>
-            </div>
-            <table class="log-table">
-              <thead>
-                <tr>
-                  <th>Time</th>
-                  <th>Message</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody id="logs-tbody"></tbody>
-            </table>
-          </div>
+                <div class="filters">
+                  <div class="form-group">
+                    <label for="log-search">전체 텍스트 검색</label>
+                    <input
+                      type="search"
+                      id="log-search"
+                      placeholder="메시지, 에이전트, 정책 또는 플러그인으로 검색"
+                      autocomplete="off"
+                    />
+                  </div>
 
-          <div class="widget widget-log-details">
-            <div class="widget-title-row">
-              <h3 class="widget-title">濡쒓렇 ?곸꽭 ?곸뿭</h3>
+                  <div class="filter-row">
+                    <div class="form-group">
+                      <label for="filter-agent">에이전트</label>
+                      <select id="filter-agent">
+                        <option value="all">모든 에이전트</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="filter-verdict">판정</label>
+                      <select id="filter-verdict">
+                        <option value="all">전체</option>
+                        <option value="pass">통과</option>
+                        <option value="violation">위반</option>
+                        <option value="blocked">차단</option>
+                      </select>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="filter-timeframe">시간 범위</label>
+                      <select id="filter-timeframe">
+                        <option value="all">전체</option>
+                        <option value="15m">최근 15분</option>
+                        <option value="1h">최근 1시간</option>
+                        <option value="24h">최근 24시간</option>
+                      </select>
+                  </div>
+                </div>
+                <div class="log-source-switch" role="group" aria-label="로그 유형 선택">
+                  <button class="btn-outlined active" type="button" data-log-source="all">전체</button>
+                  <button class="btn-outlined" type="button" data-log-source="registry">레지스트리 로그</button>
+                  <button class="btn-outlined" type="button" data-log-source="agent">에이전트 로그</button>
+                </div>
+              </div>
+            </article>
+
+              <article class="widget logs-results">
+                <div class="widget-header-with-button">
+                  <h3 class="widget-title">로그 탐색기</h3>
+                  <div class="widget-actions">
+                    <span class="pill" id="log-count">0건</span>
+                  </div>
+                </div>
+
+                <div class="log-table-wrapper">
+                  <table class="log-table">
+                    <thead>
+                      <tr>
+                        <th scope="col">시간</th>
+                        <th scope="col">에이전트</th>
+                        <th scope="col">IP</th>
+                        <th scope="col">판정</th>
+                        <th scope="col">컨텍스트</th>
+                        <th scope="col">메시지</th>
+                        <th scope="col"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="logs-table-body">
+                      <tr>
+                        <td colspan="7" class="empty-state">로그를 불러오는 중…</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
             </div>
-            <div style="color: var(--text-secondary)">[ 濡쒓렇 ??ぉ ?대┃ ???곸꽭 ?뺣낫 ?쒖떆 ]</div>
-          </div>
-        </section>
+          </section>
+        </div>
       </main>
     </div>
-  <script>
-    document.addEventListener('DOMContentLoaded', async () => {
-      const tbody = document.getElementById('logs-tbody');
-      const btn = document.getElementById('logs-refresh-btn');
 
-      function statusText(ok){ return ok ? 'OK' : 'Error'; }
-      function timeText(entry){
-        if (entry.timeText) return entry.timeText;
-        if (entry.timeIso) {
-          try { return new Date(entry.timeIso).toLocaleTimeString('ko-KR', { hour12: false }); } catch { return ''; }
-        }
-        return '';
-      }
-      function renderRow(entry){
-        const tr = document.createElement('tr');
-        const tdT = document.createElement('td'); tdT.textContent = timeText(entry);
-        const tdM = document.createElement('td'); tdM.textContent = entry.message || '';
-        const tdS = document.createElement('td'); tdS.textContent = statusText(entry.ok); tdS.style.color = entry.ok ? '#4dff4d' : 'var(--critical-red)';
-        tr.appendChild(tdT); tr.appendChild(tdM); tr.appendChild(tdS);
-        return tr;
-      }
-      async function loadLogs(){
-        try{
-          const res = await fetch('/api/logs');
-          const data = await res.json();
-          tbody.innerHTML = '';
-          (data.logs || []).forEach(e => tbody.appendChild(renderRow(e)));
-        }catch(e){ /* ignore */ }
-      }
-      btn?.addEventListener('click', loadLogs);
-      loadLogs();
-    });
-  </script>
+    <template id="log-row-template">
+      <tr>
+        <td class="log-time"></td>
+        <td class="log-agent"></td>
+        <td class="log-ip"></td>
+        <td class="log-verdict"></td>
+        <td class="log-context"></td>
+        <td class="log-message"></td>
+        <td class="log-actions">
+          <button class="btn-secondary btn-small">자세히</button>
+        </td>
+      </tr>
+    </template>
+
+    <div class="modal-overlay hidden" id="log-modal">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="log-modal-title">
+        <div class="modal-header">
+          <h3 id="log-modal-title">로그 상세</h3>
+          <button class="btn-secondary" id="close-log-modal">닫기</button>
+        </div>
+        <div class="modal-content">
+          <pre id="log-modal-content"></pre>
+        </div>
+      </div>
+    </div>
   </body>
-  </html>
-
-
+</html>
