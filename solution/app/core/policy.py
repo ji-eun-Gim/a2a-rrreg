@@ -75,7 +75,6 @@ def _parse_ip_range(entry: str) -> Optional[ipaddress.IPv4Network]:
 class ExtensionLimits:
     max_depth: int
     max_array_length: int
-    max_string_length: int
     max_nodes: int
 
 
@@ -107,7 +106,6 @@ class PolicyConfig:
         limits = ExtensionLimits(
             max_depth=int(os.environ.get("EXTENSION_MAX_DEPTH", "6")),
             max_array_length=int(os.environ.get("EXTENSION_MAX_ARRAY_LENGTH", "64")),
-            max_string_length=int(os.environ.get("EXTENSION_MAX_STRING_LENGTH", "1024")),
             max_nodes=int(os.environ.get("EXTENSION_MAX_NODES", "2000")),
         )
         return cls(domains=domains, ip_networks=ip_ranges, limits=limits)
@@ -120,7 +118,6 @@ IP_WHITELIST: Tuple[ipaddress.IPv4Network, ...] = _CONFIG.ip_networks
 DEFAULT_EXTENSION_LIMITS = {
     "maxDepth": _CONFIG.limits.max_depth,
     "maxArrayLength": _CONFIG.limits.max_array_length,
-    "maxStringLength": _CONFIG.limits.max_string_length,
     "maxNodes": _CONFIG.limits.max_nodes,
 }
 
@@ -229,11 +226,6 @@ class PolicyEvaluator:
             if depth > limits.max_depth:
                 return f"extension 중첩 깊이({depth})가 허용치를 넘었습니다."
 
-            if isinstance(value, str):
-                if len(value) > limits.max_string_length:
-                    return "extension 문자열 길이가 너무 큽니다."
-                continue
-
             if isinstance(value, list):
                 obj_id = id(value)
                 if obj_id in seen_ids:
@@ -329,7 +321,6 @@ def check_extension_limits(extension, limits=None):
         ext_limits = ExtensionLimits(
             max_depth=limits.get("maxDepth", _CONFIG.limits.max_depth),
             max_array_length=limits.get("maxArrayLength", _CONFIG.limits.max_array_length),
-            max_string_length=limits.get("maxStringLength", _CONFIG.limits.max_string_length),
             max_nodes=limits.get("maxNodes", _CONFIG.limits.max_nodes),
         )
         custom_evaluator = PolicyEvaluator(

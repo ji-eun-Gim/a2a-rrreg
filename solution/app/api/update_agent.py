@@ -100,6 +100,7 @@ def update_agent():
             return jsonify({"error": 'INVALID_TOKEN', "message": sig_reason or 'Invalid JWS signature'}), 498
 
     # --- 화이트리스트 및 중복 name/url 검증 ---
+    evaluator: PolicyEvaluator | None = None
     try:
         evaluator = PolicyEvaluator()
         wle = evaluator._check_whitelist(card)
@@ -108,6 +109,14 @@ def update_agent():
     if isinstance(wle, str) and wle:
         append_log('정책 검사 실패 : 도메인/IP 화이트리스트 불일치 (400 Bad Request)', False)
         return jsonify({"error": 'WHITELIST_REJECTED', "message": wle}), 400
+    if evaluator:
+        try:
+            extension_error = evaluator._check_extension_limits(card.get('extension'))
+        except Exception:
+            extension_error = None
+        if isinstance(extension_error, str) and extension_error:
+            append_log('정책 검사 실패 : extension 제한 초과 (400 Bad Request)', False)
+            return jsonify({"error": 'EXTENSION_LIMIT_EXCEEDED', "message": extension_error}), 400
 
     # 자기 자신을 제외한 중복 검사
     new_name = str(card.get('name') or '').strip().lower()

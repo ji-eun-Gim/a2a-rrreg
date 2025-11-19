@@ -3,8 +3,6 @@ import json
 import secrets
 from datetime import datetime, timezone, timedelta
 from flask import request, jsonify
-import secrets
-from datetime import datetime, timezone, timedelta
 
 from . import api_bp
 from ..core.auth import require_jwt, require_admin
@@ -14,7 +12,7 @@ from ..core.validators import (
     validate_card_basic,
     DEFAULT_MAX_AGENT_CARD_BYTES,
 )
-from ..core.signatures import verify_jws
+from ..core.signatures import verify_jws, validate_signatures_jws_like
 from ..core.policy import check_duplicate_card, PolicyEvaluator
 from ..core.tenants import extract_tenants
 import requests
@@ -178,7 +176,8 @@ def create_agent():
             pass
         return jsonify({"error": 'CONFLICT', "message": dup}), 409
 
-    # 도메인 / IP 화이트리스트 검사 (.env 기반)
+    # 도메인 / IP 화이트리스트 검사 (.env 기반) + extension 제한
+    evaluator: PolicyEvaluator | None = None
     try:
         evaluator = PolicyEvaluator()  # 환경변수(AGENT_DOMAIN_WHITELIST, AGENT_IP_WHITELIST)에서 값 읽기
         wle = evaluator._check_whitelist(card)
@@ -190,6 +189,17 @@ def create_agent():
         except Exception:
             pass
         return jsonify({"error": 'WHITELIST_REJECTED', "message": wle}), 400
+    if evaluator:
+        try:
+            extension_error = evaluator._check_extension_limits(card.get('extension'))
+        except Exception:
+            extension_error = None
+        if isinstance(extension_error, str) and extension_error:
+            try:
+                append_log('정책 검사 실패 : extension 제한 초과 (400 Bad Request)', False)
+            except Exception:
+                pass
+            return jsonify({"error": 'EXTENSION_LIMIT_EXCEEDED', "message": extension_error}), 400
 
     name = str(card.get('name', ''))
 
