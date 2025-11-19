@@ -1,196 +1,182 @@
-/* === CSS 변수 (테마) === */
-:root {
-  --bg-dark-primary: #1a1a2e; /* 매우 어두운 네이비 (메인 배경) */
-  --bg-dark-secondary: #1e1e3f; /* 살짝 밝은 네이비 (카드 배경) */
-  --border-color: #3a3a5f; /* 테두리 색상 */
-  --text-primary: #f0f0f5; /* 기본 텍스트 */
-  --text-secondary: #aab; /* 보조 텍스트 */
-  --accent-primary: #00aaff; /* 포인트 색상 (블루) */
-  --accent-hover: #0088cc; /* 포인트 호버 */
-  --critical-red: #ff4d4d; /* 위협 (Critical) */
-  --warning-yellow: #ffaa00; /* 위협 (Warning) */
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
+.logs-grid {
+  display: grid;
+  gap: 1.5rem;
 }
 
-/* === 기본 스타일 === */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@media (min-width: 1080px) {
+  .logs-grid {
+    grid-template-columns: 320px minmax(0, 1fr);
+    align-items: start;
+  }
 }
 
-html,
-body {
-  height: 100%;
-  font-family: var(--font-family);
-  background-color: var(--bg-dark-primary);
-  color: var(--text-primary);
-  font-size: 16px;
-}
-
-/* === 메인 레이아웃 === */
-.app-container {
+.filters {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  gap: 1.25rem;
 }
 
-.app-header {
+.btn-outlined {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: inherit;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+}
+
+.log-source-switch {
   display: flex;
-  align-items: center;
-  padding: 0 2rem;
-  height: 60px;
-  background-color: var(--bg-dark-secondary);
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
 }
 
-.logo {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--accent-primary);
-  margin-right: 2rem;
-}
-
-/* === 네비게이션 (탭) === */
-.main-nav {
-  display: flex;
-  height: 100%;
-}
-
-.nav-link {
-  display: flex;
-  align-items: center;
-  padding: 0 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-decoration: none;
-  border-bottom: 3px solid transparent;
-  transition: color 0.2s, border-bottom-color 0.2s;
+.log-source-switch .btn-outlined {
+  padding: 0.35rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
   cursor: pointer;
 }
 
-.nav-link:hover {
-  color: var(--text-primary);
+.log-source-switch .btn-outlined.active {
+  background: rgba(101, 209, 255, 0.15);
+  border-color: rgba(101, 209, 255, 0.6);
 }
 
-.nav-link.active {
-  color: var(--accent-primary);
-  border-bottom-color: var(--accent-primary);
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
 }
 
-/* === 메인 컨텐츠 영역 === */
-.content-area {
-  flex-grow: 1;
-  padding: 2rem;
-  overflow-y: auto; /* 컨텐츠가 많아지면 스크롤 */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
 }
 
-.content-page {
+.log-table-wrapper {
+  max-height: clamp(320px, 70vh, 720px);
+  overflow: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.log-table {
+  width: 100%;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.log-table th,
+.log-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: left;
+  vertical-align: top;
+}
+
+.log-table th {
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(12px);
+  z-index: 1;
+}
+
+.log-table tbody tr:hover {
+  background: rgba(101, 209, 255, 0.08);
+}
+
+.log-table .log-message {
+  max-width: 420px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-table .log-actions {
+  text-align: right;
+}
+
+.btn-small {
+  padding: 0.4rem 0.8rem;
+}
+
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 12, 24, 0.7);
+  z-index: 1000;
   display: none;
 }
 
-.content-page.active {
+.modal-overlay:not(.hidden) {
   display: block;
 }
 
-/* === 위젯 기본 스타일 === */
-.widget {
-  background-color: var(--bg-dark-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
-  margin-bottom: 2rem; /* Grid 사용 시 gap으로 대체) */
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-surface);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  min-width: 320px;
+  width: min(760px, 92vw);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: var(--shadow-lg);
+  resize: both;
+  overflow: hidden;
 }
 
-/* Grid 레이아웃 내의 위젯은 margin-bottom 제거 */
-.content-page.active[id="logs"] {
-  margin-bottom: 0;
-}
-.content-page.active[id="logs"] .widget {
-  margin-bottom: 0;
+.modal.is-dragging {
+  cursor: grabbing;
 }
 
-.widget:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 170, 255, 0.1);
-}
-
-.widget-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-/* 버튼 & 타이틀 행 (공통) */
-.btn {
-  display: inline-flex;
+.modal-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  gap: 0.25rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-dark-primary);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-}
-.btn:hover { background: #2a2a4f; }
-.btn:active { transform: translateY(1px); }
-.btn:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
-.btn.icon-only { padding: 0; width: 36px; height: 36px; }
-.btn-primary { border-color: rgba(0,170,255,.35); background: rgba(0,170,255,.12); color: var(--accent-primary); }
-.btn-primary:hover { background: rgba(0,170,255,.2); border-color: rgba(0,170,255,.6); }
-
-.widget-title-row { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding-bottom: .5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; }
-.widget-title-row .widget-title { margin: 0; padding: 0; border: 0; }
-.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24; font-size: 20px; line-height: 1; }
-
-/* === 3. 로그 페이지 (CSS Grid) - 수정됨 === */
-#logs.active {
-  display: grid;
-  grid-template-columns: 4fr 3fr; /* 1:2 비율 (좌측 1, 우측 2) */
-  grid-template-rows: auto 1fr; /* 상단 필터, 하단 리스트 */
-  gap: 2rem;
+  gap: 0.75rem;
+  cursor: move;
+  user-select: none;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.widget-log-filter {
-  grid-column: 1 / 2; /* 좌측 상단 */
-  grid-row: 1 / 2;
+.modal-content {
+  flex: 1;
+  overflow: auto;
 }
 
-.widget-log-list {
-  grid-column: 1 / 2; /* 좌측 하단 */
-  grid-row: 2 / 3;
+.modal-content pre {
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #e9f1ff;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
-.widget-log-details {
-  grid-column: 2 / 3; /* 우측 */
-  grid-row: 1 / 3; /* 우측 2칸 모두 차지 */
-}
-
-/* 로그 리스트 샘플 (테이블) */
-.log-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-.log-table th,
-.log-table td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
-}
-.log-table th {
-  background-color: #2a2a4f;
-}
-.log-table tr:hover {
-  background-color: #2a2a4f;
+@media (max-width: 768px) {
+  .log-table-wrapper {
+    max-height: none;
+  }
 }

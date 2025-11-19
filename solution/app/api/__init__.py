@@ -12,3 +12,4 @@ from . import delete_agent  # noqa: E402,F401
 from . import search_agents  # noqa: E402,F401
 from . import agents_basic  # noqa: E402,F401
 from . import logs_api  # noqa: E402,F401
+from . import rulesets_api  # noqa: E402,F401

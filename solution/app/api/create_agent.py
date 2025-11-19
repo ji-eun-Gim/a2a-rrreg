@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import secrets
 from datetime import datetime, timezone, timedelta
@@ -155,7 +155,7 @@ def create_agent():
         return jsonify({"error": 'REQUIRED_FIELDS_MISSING', "errors": errors}), 422
 
     # --- JWS 구조 검증 (암호 검증 제외) ---
-    sig_ok, sig_reason = validate_signatures_jws_like(card)
+    sig_ok, sig_reason = verify_jws(card)
     if not sig_ok:
         try:
             # 표준화된 서명 불일치 로그
@@ -176,7 +176,8 @@ def create_agent():
             pass
         return jsonify({"error": 'CONFLICT', "message": dup}), 409
 
-    # 도메인 / IP 화이트리스트 검사 (.env 기반)
+    # 도메인 / IP 화이트리스트 검사 (.env 기반) + extension 제한
+    evaluator: PolicyEvaluator | None = None
     try:
         evaluator = PolicyEvaluator()  # 환경변수(AGENT_DOMAIN_WHITELIST, AGENT_IP_WHITELIST)에서 값 읽기
         wle = evaluator._check_whitelist(card)
@@ -188,6 +189,17 @@ def create_agent():
         except Exception:
             pass
         return jsonify({"error": 'WHITELIST_REJECTED', "message": wle}), 400
+    if evaluator:
+        try:
+            extension_error = evaluator._check_extension_limits(card.get('extension'))
+        except Exception:
+            extension_error = None
+        if isinstance(extension_error, str) and extension_error:
+            try:
+                append_log('정책 검사 실패 : extension 제한 초과 (400 Bad Request)', False)
+            except Exception:
+                pass
+            return jsonify({"error": 'EXTENSION_LIMIT_EXCEEDED', "message": extension_error}), 400
 
     name = str(card.get('name', ''))
 
