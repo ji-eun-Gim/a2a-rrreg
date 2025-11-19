@@ -3,8 +3,6 @@ import json
 import secrets
 from datetime import datetime, timezone, timedelta
 from flask import request, jsonify
-import secrets
-from datetime import datetime, timezone, timedelta
 
 from . import api_bp
 from ..core.auth import require_jwt, require_admin
@@ -14,7 +12,7 @@ from ..core.validators import (
     validate_card_basic,
     DEFAULT_MAX_AGENT_CARD_BYTES,
 )
-from ..core.signatures import verify_jws
+from ..core.signatures import verify_jws, validate_signatures_jws_like
 from ..core.policy import check_duplicate_card, PolicyEvaluator
 from ..core.tenants import extract_tenants
 import requests
@@ -143,8 +141,8 @@ def create_agent():
             except Exception:
                 # 자동 서명 실패 시에도 본 검증 흐름을 진행
                 pass
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     # --- 기본 스키마 검증 ---
     ok, errors = validate_card_basic(card)
