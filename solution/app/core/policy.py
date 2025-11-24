@@ -153,15 +153,21 @@ class PolicyEvaluator:
         target_url = _to_key(card.get("url"))
 
         for agent in agents:
+            if not isinstance(agent, dict):
+                continue
+            status = str(agent.get("status") or "").strip().lower()
             existing = agent.get("card") if isinstance(agent.get("card"), dict) else agent
             if not isinstance(existing, dict):
                 continue
             name = _to_key(existing.get("name"))
             url = _to_key(existing.get("url"))
+            # already-deleted agents are ignored for duplicate check
+            if status == "deleted":
+                continue
             if target_name and name and name == target_name:
-                return "동일한 name 을 가진 에이전트가 이미 존재합니다."
+                return "?? name ?? ??? ????? ?? ?????."
             if target_url and url and url == target_url:
-                return "동일한 url 을 가진 에이전트가 이미 존재합니다."
+                return "?? url ? ??? ????? ?? ?????."
         return None
 
     def _check_whitelist(self, card: Dict[str, Any]) -> Optional[str]:

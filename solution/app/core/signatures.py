@@ -93,6 +93,15 @@ def verify_jws(card: Dict[str, Any]) -> Tuple[bool, str]:
     return True, ''
 
 
+def validate_signatures_jws_like(card: Dict[str, Any]) -> Tuple[bool, str]:
+    """
+    Backward-compatible alias used by API layer.
+    Performs the same structural checks as verify_jws.
+    """
+    return verify_jws(card)
+
+
 __all__ = [
     'verify_jws',
+    'validate_signatures_jws_like',
 ]
