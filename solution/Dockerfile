@@ -1,18 +1,19 @@
 FROM python:3.11-slim
 
-WORKDIR /app
-
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV PORT=3000
 
-COPY pyproject.toml /app/
-COPY app /app/app
-COPY data /app/data
-RUN pip install --no-cache-dir -U pip && \
-    pip install --no-cache-dir -e .
+WORKDIR /app
 
-ENV FLASK_APP=app:create_app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY app ./app
+COPY frontend ./frontend
+COPY data ./data
+COPY README.md .
 
 EXPOSE 3000
-CMD ["gunicorn", "app:create_app()", "-w", "2", "-b", "0.0.0.0:3000"]
 
+CMD ["gunicorn", "-b", "0.0.0.0:3000", "app.main:app"]

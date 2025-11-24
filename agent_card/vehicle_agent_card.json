@@ -1,0 +1,189 @@
+{
+  "name": "VehicleAgent",
+  "description": "vehicle_agent.description",
+  "protocolVersion": "1.0",
+  "url": "http://localhost:10004",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": true,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": [
+    "text",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "vehicle_management",
+      "name": "Vehicle Management",
+      "description": "차량 가용 현황, 상태 조회, 정비 스케줄, 적재 용량, 최적 차량 추천 등을 수행한다",
+      "tags": [
+        "vehicle",
+        "fleet",
+        "dispatch",
+        "maintenance"
+      ],
+      "examples": [
+        "전체 차량 가용 현황 알려줘",
+        "현재 정비 중인 차량 목록 보여줘"
+      ]
+    }
+  ],
+  "extensions": [
+    {
+      "uri": "https://Attager.ai/ext/tools/v1",
+      "description": "VehicleAgent가 사용하는 툴 및 인자 스키마 정의",
+      "required": false,
+      "params": {
+        "tools": [
+          {
+            "tool_id": "get_fleet_availability",
+            "skill": "vehicle_management",
+            "description": "전체 차량 가용 현황을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "depot_id": {
+                  "type": "string",
+                  "description": "특정 차고지 ID (지정 시 해당 차고지만 조회, 미지정 시 전체 대상)"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_vehicle_status",
+            "skill": "vehicle_management",
+            "description": "특정 차량의 현재 상태(가용/운행중/정비/리콜 등)를 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "vehicle_id": {
+                  "type": "string",
+                  "description": "조회할 차량 ID (예: VEH001)"
+                }
+              },
+              "required": [
+                "vehicle_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "filter_available_vehicles",
+            "skill": "vehicle_management",
+            "description": "조건에 맞는 운행 가능 차량만 필터링합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "min_capacity": {
+                  "type": "number",
+                  "description": "필요한 최소 적재 용량 (톤 또는 동일 단위)"
+                },
+                "vehicle_type": {
+                  "type": "string",
+                  "description": "차량 종류 (예: truck, van, refrigerated)"
+                },
+                "region": {
+                  "type": "string",
+                  "description": "운행 가능 지역 또는 권역 코드"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_vehicles_on_maintenance",
+            "skill": "vehicle_management",
+            "description": "현재 정비 중인 차량 목록을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "depot_id": {
+                  "type": "string",
+                  "description": "특정 차고지 ID (지정 시 해당 차고지만 조회)"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_assigned_recall_vehicles",
+            "skill": "vehicle_management",
+            "description": "리콜 작업에 배정된 차량 리스트를 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "recall_id": {
+                  "type": "string",
+                  "description": "리콜 캠페인 ID (예: RECALL2025-01)"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_vehicle_capacity",
+            "skill": "vehicle_management",
+            "description": "특정 차량의 적재 용량 정보를 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "vehicle_id": {
+                  "type": "string",
+                  "description": "적재 용량을 확인할 차량 ID"
+                }
+              },
+              "required": [
+                "vehicle_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "recommend_optimal_vehicles",
+            "skill": "vehicle_management",
+            "description": "화물 조건과 운행 제약을 고려하여 최적의 차량을 추천합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "required_capacity": {
+                  "type": "number",
+                  "description": "필요 적재 용량 (톤 또는 동일 단위)"
+                },
+                "origin": {
+                  "type": "string",
+                  "description": "출발지 지역/코드"
+                },
+                "destination": {
+                  "type": "string",
+                  "description": "도착지 지역/코드"
+                },
+                "delivery_deadline": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "배송 완료 희망 시각 (ISO 8601 형식, 선택값)"
+                }
+              },
+              "required": [
+                "required_capacity",
+                "origin",
+                "destination"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

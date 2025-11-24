@@ -1,0 +1,167 @@
+{
+  "agent_id": "Attager.ai#agent:DeliveryAgent.v1.0.0",
+  "card": {
+    "name": "DeliveryAgent",
+    "description": "주문 배송 상태를 조회, 요약, 관리하는 Delivery Agent입니다.",
+    "protocolVersion": "1.0",
+    "url": "http://localhost:10001",
+    "preferredTransport": "JSONRPC",
+    "version": "1.0.0",
+
+    "provider": {
+      "organization": "Attager.ai",
+      "url": "https://Attager.ai"
+    },
+
+    "capabilities": {
+      "streaming": true,
+      "pushNotifications": true,
+      "stateTransitionHistory": false
+    },
+
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+
+    "security": [
+      {
+        "bearerAuth": []
+      }
+    ],
+
+    "defaultInputModes": ["text/plain"],
+    "defaultOutputModes": ["text/plain"],
+
+    "skills": [
+      {
+        "id": "delivery_lookup",
+        "name": "배송 조회",
+        "description": "주문번호 또는 사용자 ID로 배송 상태를 조회할 수 있습니다.",
+        "tags": ["delivery", "tracking", "order"],
+        "examples": [
+          "ORD1001 주문 상태 알려줘",
+          "고객 1234의 배송 현황 보여줘"
+        ],
+        "inputModes": ["text/plain"],
+        "outputModes": ["application/json"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      {
+        "id": "delivery_summary",
+        "name": "배송 요약",
+        "description": "전체 배송 목록 및 완료된 배송 건수를 요약 제공합니다.",
+        "tags": ["summary", "report"],
+        "examples": [
+          "오늘 완료된 배송 몇 건이야?",
+          "전체 배송 현황 요약"
+        ],
+        "inputModes": ["text/plain"],
+        "outputModes": ["text/plain"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    ],
+
+    "extensions": [
+      {
+        "uri": "https://Attager.ai/ext/tools/v1",
+        "description": "DeliveryAgent가 사용하는 툴 및 인자 스키마 정의",
+        "required": false,
+        "params": {
+          "tools": [
+            {
+              "tool_id": "get_delivery_data",
+              "skill": "delivery_lookup",
+              "description": "주문번호로 특정 주문의 배송 상태를 조회합니다.",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "description": "조회할 주문번호 (예: ORD1001)"
+                  }
+                },
+                "required": ["order_id"],
+                "additionalProperties": false
+              }
+            },
+            {
+              "tool_id": "get_all_deliveries",
+              "skill": "delivery_summary",
+              "description": "전체 배송 데이터를 조회합니다.",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 50,
+                    "description": "가져올 최대 배송 건수 (기본값 50)"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "all",
+                      "pending",
+                      "in_progress",
+                      "completed",
+                      "canceled"
+                    ],
+                    "default": "all",
+                    "description": "필터링할 배송 상태"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            {
+              "tool_id": "get_completed_deliveries",
+              "skill": "delivery_summary",
+              "description": "완료된 배송 건수를 조회합니다.",
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "조회 시작일 (YYYY-MM-DD, 예: 2025-11-01)"
+                  },
+                  "to_date": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "조회 종료일 (YYYY-MM-DD, 예: 2025-11-30)"
+                  }
+                },
+                "required": [],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      }
+    ],
+
+    "signatures": [
+      {
+        "protected": "eyJhbGciOiJIUzI1NiIsImtpZCI6InJlZ2lzdHJ5LWhzMjU2LWtleS0xIiwidHlwIjoiSldUIn0",
+        "signature": "Izy6DJ-N1MJkUnvUnuTc5Y3jBB0RWFqCh11URlL5JpY",
+        "header": {
+          "kid": "registry-hs256-key-1"
+        }
+      }
+    ]
+  }
+}

@@ -102,11 +102,6 @@ def list_agents():
     """등록된 에이전트 목록을 반환."""
     agents = repo.load_agents()
     normalized = [_normalize_agent(agent) for agent in agents]
-    try:
-        ip = request.remote_addr or 'unknown'
-        append_log(f'에이전트 조회 성공 (IP={ip})', True, capture_client_ip=True, client_ip=ip)
-    except Exception:
-        pass
     return jsonify(normalized)
 
 

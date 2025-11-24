@@ -47,6 +47,7 @@
                         aria-label="에이전트 검색"
                         class="agent-search-input"
                         placeholder="에이전트 검색"
+                        id="agent-search"
                         autocomplete="off"
                       />
                     </label>
@@ -97,6 +98,14 @@
             <span class="status-chip"></span>
             <span class="pill" data-role="created"></span>
           </div>
+        </div>
+
+        <div class="overview-actions">
+          <span class="status-message" id="agent-action-status" role="status"></span>
+          <button type="button" class="btn-danger btn-small" id="delete-agent-btn">
+            <span class="material-symbols-outlined" aria-hidden="true">delete</span>
+            삭제
+          </button>
         </div>
 
         <div class="plugins-panel">

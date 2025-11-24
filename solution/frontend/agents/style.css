@@ -161,6 +161,18 @@
   min-width: 160px;
 }
 
+.overview-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+
+.overview-actions .status-message {
+  text-align: right;
+}
+
 .plugins-panel {
   background: rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
@@ -302,5 +314,15 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
+  }
+
+  .overview-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .overview-actions .status-message {
+    text-align: left;
+    width: 100%;
   }
 }

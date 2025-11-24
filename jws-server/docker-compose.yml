@@ -1,0 +1,13 @@
+services:
+  jws:
+    build:
+      context: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8001}
+    ports:
+      - "${PORT:-8001}:8001"
+    environment:
+      - JWS_SECRET=${JWS_SECRET:-mysecretkey}
+      - JWS_ISS=${JWS_ISS:-ans-registry.example}
+      - JWS_KID=${JWS_KID:-registry-hs256-key-1}
+      - POLICY_VERSION=${POLICY_VERSION:-registry.policy.v3}
+      - PORT=${PORT:-8001}

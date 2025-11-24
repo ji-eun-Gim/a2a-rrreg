@@ -80,6 +80,4 @@ def search_agents():
         "offset": slice_start,
     }
     # 감사 로그: 어떤 범위로 조회했는지 남김
-    scope = "admin" if is_admin else ",".join(sorted(allowed_tenants)) or "none"
-    append_log(f"에이전트 조회 성공 (200 OK): scope={scope}, returned={len(items)}", True, capture_client_ip=True)
     return jsonify(resp)

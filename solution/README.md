@@ -84,3 +84,15 @@ README 수준에서 필요한 사용자 설정은 API와 core 레이어의 의�
 
 필요한 내용이 README에 없거나 추가 가이드가 필요하면 `solution/app/core/` 각 모듈의 주석을 참고하세요. 모두 한글 주석으로 정리돼 있어 개별 기능을 찾기 쉽습니다.
 
+## Docker
+
+Build and start the app + Redis with Docker Compose:
+
+```sh
+docker compose up -d --build
+```
+
+- App listens on http://localhost:3000.
+- Uses `.env` for settings; Compose also wires `REDIS_URL` to the bundled Redis.
+- Data under `/app/data` is kept in the `app_data` volume; Redis persistence lives in `redis_data`.
+- View logs with `docker compose logs -f app`.

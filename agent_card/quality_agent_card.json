@@ -1,0 +1,110 @@
+{
+  "name": "QualityAgent",
+  "description": "quality_agent.description",
+  "protocolVersion": "1.0",
+  "url": "http://localhost:10003",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": true,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": [
+    "text",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "quality_management",
+      "name": "Quality Management",
+      "description": "반품 상품 품질 검사, 최종 처분 결정, 리콜 대상 상품 조회를 수행한다",
+      "tags": [
+        "quality",
+        "return",
+        "recall",
+        "inspection"
+      ],
+      "examples": [
+        "품질 검사가 필요한 반품 상품 알려줘",
+        "반품 상품 ITEM002 최종 처분 조회해줘"
+      ]
+    }
+  ],
+  "extensions": [
+    {
+      "uri": "https://Attager.ai/ext/tools/v1",
+      "description": "QualityAgent가 사용하는 툴 및 인자 스키마 정의",
+      "required": false,
+      "params": {
+        "tools": [
+          {
+            "tool_id": "get_items_for_return_qc",
+            "skill": "quality_management",
+            "description": "품질 검사가 필요한 반품 상품 목록을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "pending_qc",
+                    "in_progress",
+                    "completed"
+                  ],
+                  "default": "pending_qc",
+                  "description": "반품 품질 검사 상태 필터 (기본값: pending_qc)"
+                }
+              },
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_return_item_disposition",
+            "skill": "quality_management",
+            "description": "특정 반품 상품의 최종 처분(재판매, 폐기, 리워크 등)을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "item_id": {
+                  "type": "string",
+                  "description": "반품 상품 ID (예: ITEM002)"
+                }
+              },
+              "required": [
+                "item_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_recall_items_list",
+            "skill": "quality_management",
+            "description": "특정 상품 ID의 리콜 대상 상품 목록을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "item_id": {
+                  "type": "string",
+                  "description": "리콜 대상 조회를 위한 상품 ID (예: ITEM002)"
+                },
+                "recall_campaign_id": {
+                  "type": "string",
+                  "description": "리콜 캠페인 ID (선택, 지정 시 해당 캠페인에 한정)"
+                }
+              },
+              "required": [
+                "item_id"
+              ],
+              "additionalProperties": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

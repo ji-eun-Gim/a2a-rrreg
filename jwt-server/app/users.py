@@ -1,35 +1,81 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from .auth import verify_password, hash_password, create_access_token, decode_access_token
+from .db import redis_client
 from .schemas import User, UserInDB, Token
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# 임시 유저 DB
-fake_users_db = {
-    "user2@example.com": {
+DEFAULT_USER_CREDENTIALS = [
+    {
         "email": "user2@example.com",
         "tenant": "logistics",
-        "hashed_password": hash_password("password1234"),
+        "password": "password1234",
     },
-    "user@example.com": {
+    {
         "email": "user@example.com",
         "tenant": "customer-service",
-        "hashed_password": hash_password("password123"),
+        "password": "password123",
     },
-    "admin@example.com": {
+    {
         "email": "admin@example.com",
         "tenant": ["logistics", "customer-service"],
-        "hashed_password": hash_password("admin123"),
-    }
-}
+        "password": "admin123",
+    },
+]
+
+
+def _user_key(email: str) -> str:
+    return f"user:{email}"
+
+
+def _serialize_tenant(tenant):
+    return json.dumps(tenant)
+
+
+def _seed_default_users():
+    for user in DEFAULT_USER_CREDENTIALS:
+        key = _user_key(user["email"])
+        if redis_client.exists(key):
+            continue
+
+        redis_client.hset(
+            key,
+            mapping={
+                "email": user["email"],
+                "tenant": _serialize_tenant(user["tenant"]),
+                "hashed_password": hash_password(user["password"]),
+            },
+        )
+
+
+def _deserialize_tenant(raw_value: str | None):
+    if not raw_value:
+        return []
+
+    try:
+        return json.loads(raw_value)
+    except json.JSONDecodeError:
+        return raw_value
+
+
+_seed_default_users()
 
 def get_user(email: str):
-    user = fake_users_db.get(email)
-    if user:
-        return UserInDB(**user)
+    key = _user_key(email)
+    user_data = redis_client.hgetall(key)
+    if not user_data:
+        return None
+
+    tenant_value = _deserialize_tenant(user_data.get("tenant"))
+    return UserInDB(
+        email=user_data["email"],
+        tenant=tenant_value,
+        hashed_password=user_data["hashed_password"],
+    )
 
 def _normalize_tenants(value):
     if isinstance(value, str):

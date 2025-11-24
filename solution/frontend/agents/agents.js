@@ -17,11 +17,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function getStatusLabel(status = '') {
   const normalised = status.toLowerCase();
-  if (normalised === 'active') return '활성';
-  if (normalised === 'inactive') return '중지';
-  if (['warning', 'degraded'].includes(normalised)) return '주의';
-  if (normalised === 'external') return '외부';
-  return '미확인';
+  if (normalised === 'active') return 'Active';
+  if (normalised === 'inactive') return 'Inactive';
+  if (normalised === 'deleted') return 'Deleted';
+  if (['warning', 'degraded'].includes(normalised)) return 'Warning';
+  if (normalised === 'external') return 'External';
+  return 'Unknown';
 }
 
 function formatDateTime(value) {
@@ -48,14 +49,21 @@ function bindSearch() {
   });
 }
 
+function getSearchTerm() {
+  const searchInput = document.getElementById('agent-search');
+  return (searchInput?.value || '').trim().toLowerCase();
+}
+
 async function loadAgents() {
   try {
     const response = await fetch(`${API_BASE}/api/agents`);
     if (!response.ok) throw new Error('에이전트를 불러오지 못했습니다');
     const agents = await response.json();
 
-    state.agents = Array.isArray(agents) ? agents : [];
-    renderAgentList();
+    state.agents = (Array.isArray(agents) ? agents : []).filter(
+      (agent) => (agent.status || '').toLowerCase() !== 'deleted'
+    );
+    renderAgentList(getSearchTerm());
   } catch (error) {
     console.error('에이전트 목록을 불러오지 못했습니다', error);
     const list = document.getElementById('agent-list');
@@ -101,6 +109,7 @@ function renderAgentList(filter = '') {
   list.innerHTML = '';
 
   const filteredAgents = state.agents.filter((agent) => {
+    if ((agent.status || '').toLowerCase() === 'deleted') return false;
     if (!filter) return true;
     return (
       agent.agent_id?.toLowerCase().includes(filter) ||
@@ -148,7 +157,7 @@ function renderAgentList(filter = '') {
 function getStatusClass(status = '') {
   const normalised = status.toLowerCase();
   if (normalised === 'active') return 'status-active';
-  if (normalised === 'inactive') return 'status-inactive';
+  if (normalised === 'inactive' || normalised === 'deleted') return 'status-inactive';
   return 'status-warning';
 }
 
@@ -209,9 +218,11 @@ function renderAgentDetails(agent) {
   const statusChip = node.querySelector('.overview-meta .status-chip');
   const created = node.querySelector('[data-role="created"]');
   const pluginList = node.querySelector('.plugin-list');
-  const policyForm = node.querySelector('#policy-editor');
+  const policyForm = node.querySelector('#agent-policy-form');
   const enabledCheckbox = node.querySelector('#policy-enabled');
   const statusMessage = node.querySelector('#policy-status');
+  const deleteButton = node.querySelector('#delete-agent-btn');
+  const actionStatus = node.querySelector('#agent-action-status');
 
   if (title) {
     title.textContent = agent.name || agent.agent_id;
@@ -242,6 +253,18 @@ function renderAgentDetails(agent) {
       event.preventDefault();
       await savePolicy(agent.agent_id, policyForm, statusMessage);
     });
+  }
+
+  if (deleteButton) {
+    const isDeleted = (agent.status || '').toLowerCase() === 'deleted';
+    deleteButton.disabled = isDeleted;
+    if (isDeleted && actionStatus) {
+      setAgentActionStatus(actionStatus, '이미 삭제된 에이전트입니다.', true);
+    } else {
+      deleteButton.addEventListener('click', async () => {
+        await deleteAgent(agent, deleteButton, actionStatus);
+      });
+    }
   }
 
   container.appendChild(node);
@@ -368,6 +391,91 @@ function getSelectedValues(form, type) {
   return Array.from(form.querySelectorAll(`input[name="${type}"]:checked`)).map((input) => input.value);
 }
 
+function setAgentActionStatus(element, message, isError = false) {
+  if (!element) return;
+  element.textContent = message || '';
+  element.classList.toggle('error', Boolean(isError));
+}
+
+function showAgentPlaceholder(message) {
+  const container = document.getElementById('agent-details');
+  if (!container) return;
+  const title = message || '에이전트를 선택해주세요';
+  container.innerHTML = `
+    <div class="agent-details-placeholder">
+      <h3>${title}</h3>
+      <p>
+        왼쪽 목록에서 에이전트를 선택하면 플러그인과 IAM 룰셋을 확인할 수 있습니다.
+      </p>
+    </div>
+  `;
+}
+
+async function deleteAgent(agent, triggerButton, statusElement) {
+  if (!agent || !agent.agent_id) return;
+
+  if (!verifiedToken) {
+    setAgentActionStatus(statusElement, '관리자 JWT를 먼저 확인해주세요.', true);
+    openAdminTokenModal();
+    return;
+  }
+
+  const label = agent.name || agent.agent_id;
+  if (!confirm(`에이전트 ${label}을(를) 삭제할까요?`)) return;
+
+  const originalLabel = triggerButton?.textContent;
+  if (triggerButton) {
+    triggerButton.disabled = true;
+    triggerButton.textContent = '삭제 중...';
+  }
+  setAgentActionStatus(statusElement, '삭제 중...');
+
+  try {
+    const response = await fetch(`${API_BASE}/api/agents/${encodeURIComponent(agent.agent_id)}`, {
+      method: 'DELETE',
+      headers: { Authorization: verifiedToken },
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.message || err.error || '에이전트 삭제에 실패했습니다.');
+    }
+
+    setAgentActionStatus(statusElement, '삭제 완료. 목록을 갱신합니다.');
+    state.agentCache.delete(agent.agent_id);
+    state.selectedAgentId = null;
+    await loadAgents();
+    showAgentPlaceholder('에이전트를 삭제했습니다. 다른 에이전트를 선택하세요.');
+  } catch (error) {
+    console.error('에이전트 삭제 실패', error);
+    setAgentActionStatus(statusElement, error.message || '에이전트를 삭제하지 못했습니다.', true);
+  } finally {
+    if (triggerButton) {
+      triggerButton.disabled = false;
+      triggerButton.textContent = originalLabel || '삭제';
+    }
+  }
+}
+
+function openAdminTokenModal() {
+  const tokenModal = document.getElementById('token-modal');
+  if (!tokenModal) return;
+
+  tokenModal.classList.remove('hidden');
+  const input = tokenModal.querySelector('#token-input');
+  const status = tokenModal.querySelector('#token-status');
+  if (status) {
+    status.textContent = '';
+    status.classList.remove('error');
+  }
+  if (input) {
+    input.value = '';
+    input.focus();
+    if (typeof input.select === 'function') {
+      input.select();
+    }
+  }
+}
+
 function setupAddAgentModal() {
   const modal = document.getElementById('add-agent-modal');
   const closeButton = document.getElementById('close-add-agent-modal');
@@ -377,15 +485,7 @@ function setupAddAgentModal() {
   const tokenClose = document.getElementById('token-modal-close');
   const tokenForm = document.getElementById('token-form');
 
-  openButton?.addEventListener('click', () => {
-    if (tokenModal) {
-      tokenModal.classList.remove('hidden');
-      const input = tokenModal.querySelector('#token-input');
-      const status = tokenModal.querySelector('#token-status');
-      status && (status.textContent = '');
-      input?.focus();
-    }
-  });
+  openButton?.addEventListener('click', () => openAdminTokenModal());
 
   tokenClose?.addEventListener('click', () => {
     tokenModal?.classList.add('hidden');

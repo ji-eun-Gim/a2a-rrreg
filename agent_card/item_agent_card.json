@@ -1,0 +1,99 @@
+{
+  "name": "ItemAgent",
+  "description": "item_agent.description",
+  "protocolVersion": "1.0",
+  "url": "http://localhost:10002",
+  "version": "1.0.0",
+  "capabilities": {
+    "streaming": true,
+    "pushNotifications": true,
+    "stateTransitionHistory": false
+  },
+  "defaultInputModes": [
+    "text",
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text",
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "item_management",
+      "name": "Item Management",
+      "description": "상품 상세 조회 및 재고 추적을 수행한다",
+      "tags": [
+        "item",
+        "inventory",
+        "product management"
+      ],
+      "examples": [
+        "ITEM001 상품 상세 정보 알려줘",
+        "재고 수량 확인해줘"
+      ]
+    }
+  ],
+  "extensions": [
+    {
+      "uri": "https://Attager.ai/ext/tools/v1",
+      "description": "ItemAgent가 사용하는 툴 및 인자 스키마 정의",
+      "required": false,
+      "params": {
+        "tools": [
+          {
+            "tool_id": "get_item_details",
+            "skill": "item_management",
+            "description": "상품 ID로 해당 상품의 상세 정보를 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "item_id": {
+                  "type": "string",
+                  "description": "조회할 상품 ID (예: ITEM001)"
+                }
+              },
+              "required": ["item_id"],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "track_item_inventory",
+            "skill": "item_management",
+            "description": "특정 창고에서 지정한 상품의 재고 수량을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "item_id": {
+                  "type": "string",
+                  "description": "재고를 조회할 상품 ID (예: ITEM001)"
+                },
+                "warehouse_id": {
+                  "type": "string",
+                  "description": "재고를 조회할 창고 ID (예: WH001)"
+                }
+              },
+              "required": ["item_id", "warehouse_id"],
+              "additionalProperties": false
+            }
+          },
+          {
+            "tool_id": "get_all_warehouse_inventories_for_item",
+            "skill": "item_management",
+            "description": "모든 창고를 대상으로 특정 상품의 재고 현황을 조회합니다.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "item_id": {
+                  "type": "string",
+                  "description": "재고를 조회할 상품 ID (예: ITEM001)"
+                }
+              },
+              "required": ["item_id"],
+              "additionalProperties": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
