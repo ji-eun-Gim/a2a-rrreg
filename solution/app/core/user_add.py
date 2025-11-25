@@ -1,35 +1,30 @@
-"""Helpers to read user records from the JWT server's Redis."""
+"""JWT 서버 user DB에서 사용자 목록(name, title, email)을 가져오는 헬퍼."""
 
 from __future__ import annotations
 
-import json
 import os
-from typing import Any, Dict, List
-
 import redis
+import json
+from typing import List, Dict, Any
+
+# 기본 후보: 컨테이너 환경을 고려해 jwt-server 호스트 우선
+_USER_REDIS_URLS = [
+    os.getenv("JWT_REDIS_URL"),
+    "redis://jwt-server:6380/0",
+    "redis://localhost:6380/0",
+    os.getenv("REDIS_URL"),
+]
 
 
-_FALLBACK_REDIS_URLS = (
-    os.environ.get("JWT_REDIS_URL"),
-    "redis://host.docker.internal:6380/0",  # when jwt-server runs in sibling container
-    os.environ.get("REDIS_URL"),
-    "redis://localhost:6379/0",
-)
-
-
-def _pick_redis_url(explicit_url: str | None = None) -> str:
-    if explicit_url:
-        return explicit_url
-    for url in _FALLBACK_REDIS_URLS:
+def _pick_redis_url() -> str:
+    for url in _USER_REDIS_URLS:
         if url:
             return url
     return "redis://localhost:6379/0"
 
 
-def redis_client(redis_url: str | None = None) -> redis.Redis:
-    """Return a Redis client configured to decode responses as strings."""
-    url = _pick_redis_url(redis_url)
-    return redis.Redis.from_url(url, decode_responses=True)
+def redis_client():
+    return redis.Redis.from_url(_pick_redis_url(), decode_responses=True)
 
 
 def _normalize_tenants(raw_value: Any) -> List[str]:
@@ -49,9 +44,9 @@ def _normalize_tenants(raw_value: Any) -> List[str]:
     return []
 
 
-def list_users(redis_url: str | None = None) -> List[Dict[str, Any]]:
+def list_users() -> List[Dict[str, Any]]:
     """Fetch user hashes stored by the JWT server under keys like `user:<email>`."""
-    client = redis_client(redis_url)
+    client = redis_client()
     users: List[Dict[str, Any]] = []
 
     for key in client.scan_iter(match="user:*"):
@@ -64,7 +59,6 @@ def list_users(redis_url: str | None = None) -> List[Dict[str, Any]]:
                 "name": data.get("name") or data.get("email"),
                 "title": data.get("title") or "",
                 "tenants": _normalize_tenants(data.get("tenant")),
-                "hashed_password": data.get("hashed_password"),
             }
         )
 
@@ -72,8 +66,12 @@ def list_users(redis_url: str | None = None) -> List[Dict[str, Any]]:
 
 
 if __name__ == "__main__":
-    # Quick manual check: python -m app.core.user
-    found = list_users()
-    print(f"found {len(found)} user(s)")
-    for item in found:
-        print(json.dumps(item, ensure_ascii=False))
+    try:
+        url = _pick_redis_url()
+        print(f"[INFO] using redis url: {url}")
+        found = list_users()
+        print(f"[INFO] found {len(found)} user(s)")
+        for item in found:
+            print(json.dumps(item, ensure_ascii=False))
+    except Exception as e:
+        print(f"[ERR] failed to list users: {e}")

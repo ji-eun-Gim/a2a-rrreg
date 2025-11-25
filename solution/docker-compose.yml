@@ -9,10 +9,9 @@ services:
     env_file:
       - .env
     environment:
-      REDIS_URL: redis://redis:6379/0
-      JWT_REDIS_URL: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      JWT_REDIS_URL: ${JWT_REDIS_URL:-redis://host.docker.internal:6380/0}
       PORT: "3000"
-      # jwt-server 가 호스트/다른 Compose 에서 돌아갈 때 userme 엔드포인트
       USERME_DIRECT_URL: ${USERME_DIRECT_URL:-http://host.docker.internal:8000/users/me}
     volumes:
       - app_data:/app/data

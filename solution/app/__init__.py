@@ -71,10 +71,18 @@ def create_app() -> Flask:
         return send_from_directory(app.static_folder, 'index.html')
 
     @app.get('/ruleset')
+    @app.get('/ruleset/')
+    @app.get('/rulesets')
+    @app.get('/rulesets/')
     def ruleset_page():
-        target = os.path.join(app.static_folder, 'ruleset', 'ruleset.html')
-        if os.path.exists(target):
-            return send_from_directory(os.path.dirname(target), os.path.basename(target))
+        # 최신 경로 → 레거시 경로 → 인덱스 순서로 반환
+        candidates = [
+            os.path.join(app.static_folder, 'rulesets', 'rulesets.html'),
+            os.path.join(app.static_folder, 'ruleset', 'ruleset.html'),
+        ]
+        for target in candidates:
+            if os.path.exists(target):
+                return send_from_directory(os.path.dirname(target), os.path.basename(target))
         return send_from_directory(app.static_folder, 'index.html')
 
     from .api import api_bp

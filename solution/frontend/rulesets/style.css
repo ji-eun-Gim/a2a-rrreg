@@ -1,0 +1,578 @@
+/* 기본 변수 설정 */
+:root {
+  --bg-dark: #060c18;
+  --bg-surface: #0f172a;
+  --border-surface: rgba(255, 255, 255, 0.1);
+  --primary: #3b82f6;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --radius-md: 8px;
+}
+
+/* 탭 네비게이션 (현재 숨김 처리됨) */
+.view-tabs {
+  display: none;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-surface);
+  padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+  color: #fff;
+  background: var(--primary);
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 레이아웃 공통 */
+.group-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+  height: calc(100vh - 180px);
+}
+
+.group-sidebar,
+.group-detail-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-surface);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.group-sidebar .widget-header-with-button {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-surface);
+}
+
+.group-nav-list {
+  list-style: none;
+  padding: 0.5rem;
+  margin: 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.group-nav-item {
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.25rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.group-nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+}
+
+.group-nav-item.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.group-detail-panel {
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.group-info h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.group-info p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.divider {
+  border: 0;
+  height: 1px;
+  background: var(--border-surface);
+  margin: 1.5rem 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 테이블 스타일 */
+.table-container {
+  overflow: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.ruleset-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+/* 테이블 셀 공통 스타일 (기본 가운데 정렬) */
+.ruleset-table th,
+.ruleset-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center; /* 기본 가운데 정렬 */
+  vertical-align: middle;
+}
+
+/* 테이블 헤더 스타일 */
+.ruleset-table th {
+  font-size: 0.78rem;
+  text-transform: none; /* 대소문자 그대로 표시 */
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  font-weight: 600;
+}
+
+.ruleset-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* [열별 정렬 오버라이드] */
+/* 1열(이름), 2열(설명/직급): 왼쪽 정렬 & 여백 */
+.ruleset-table th:nth-child(1),
+.ruleset-table td:nth-child(1),
+.ruleset-table th:nth-child(2),
+.ruleset-table td:nth-child(2) {
+  text-align: center; /* 가운데 정렬로 변경 */
+  padding-left: 1.5rem;
+}
+
+/* 마지막 열(관리 버튼): 오른쪽 정렬 & 여백 */
+.ruleset-table th:last-child,
+.ruleset-table td:last-child {
+  text-align: right;
+  padding-right: 1.5rem;
+}
+
+/* 유틸리티 */
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-sm {
+  font-size: 0.85rem;
+}
+.text-xs {
+  font-size: 0.75rem;
+}
+.font-medium {
+  font-weight: 500;
+}
+.text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+.text-success {
+  color: #34d399;
+}
+.text-danger {
+  color: #f87171;
+}
+.text-center {
+  text-align: center !important;
+}
+
+/* 배지 스타일 */
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+.status-badge.inactive {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+.status-badge.empty {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+}
+
+/* 토글 버튼 */
+.toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.4rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.toggle-btn.on {
+  color: #10b981;
+}
+.toggle-btn.off {
+  color: #64748b;
+  opacity: 0.5;
+}
+
+/* 버튼 */
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.4rem;
+}
+.btn-icon:hover {
+  color: #fff;
+}
+.btn-icon.delete:hover {
+  color: #ef4444;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger {
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+.btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+.btn-primary:disabled {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  border: 1px solid var(--border-surface);
+}
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+}
+.btn-danger {
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+/* 모달 스타일 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: none;
+}
+.modal-overlay.active {
+  display: block;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #1e293b;
+  border: 1px solid var(--border-surface);
+  border-radius: 8px;
+  padding: 1.5rem;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-surface);
+  padding-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-surface);
+  padding: 0.6rem;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* 폼 섹션 박스 */
+.form-section-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-surface);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.section-title {
+  margin: 0 0 1rem 0;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-surface);
+  padding-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 라디오 그룹 */
+.radio-group {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.radio-label i {
+  margin-right: 0.25rem;
+}
+
+/* 모달 하단 버튼 영역 정렬 (오른쪽 끝) */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* 검색 및 사용자 선택 스타일 */
+.input-with-icon {
+  position: relative;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+
+.input-with-icon input {
+  padding-left: 36px;
+}
+
+.user-select-table {
+  min-width: auto;
+}
+
+.user-select-row {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.user-select-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.user-select-row.selected {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.radio-indicator {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-secondary);
+  border-radius: 50%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 0;
+}
+
+.user-select-row.selected .radio-indicator {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.user-select-row.selected .radio-indicator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.hidden {
+  display: none !important;
+}
+
+.empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-placeholder i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+  .group-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .group-sidebar {
+    height: 200px;
+    margin-bottom: 1rem;
+  }
+  .radio-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+.ruleset-table td.empty-state {
+  text-align: center !important;
+}
+.user-select-table {
+  border-collapse: separate !important;
+  border-spacing: 0;
+  width: 100%;
+}
+
+/* 2. 제목행 고정 및 스타일 (핵심) */
+.user-select-table th {
+  /* [필수] 스크롤 시 고정되도록 설정 */
+  position: sticky !important;
+  top: 0 !important;
+
+  /* [서열 정리] 가장 위에 오도록 설정 (체크박스보다 높게) */
+  z-index: 50 !important;
+
+  /* 배경색 및 테두리 */
+  background-color: #1e293b !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; /* 반투명 테두리 */
+
+  /* 그림자 제거 (가상 요소로 대체) */
+  box-shadow: none !important;
+}
+
+/* 3. 제목행 위쪽 틈새 가림막 (글자 삐져나옴 방지) */
+.user-select-table th::before {
+  content: "";
+  position: absolute;
+  top: -2px; /* 헤더 위쪽 2px 지점 */
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #1e293b; /* 모달 배경색과 동일 */
+
+  /* [서열 정리] 헤더(50)보다는 낮고, 체크박스(1)보다는 높게 */
+  z-index: 40 !important;
+}
+
+/* 4. 체크박스 및 본문 서열 정리 (헤더 위로 올라오는 것 방지) */
+.radio-indicator {
+  position: relative;
+  /* [서열 정리] 가장 낮게 설정하여 가림막 밑으로 들어가게 함 */
+  z-index: 1 !important;
+}
+
+/* (선택) 본문 행이 헤더 위로 오지 않도록 안전장치 */
+.user-select-table tbody tr {
+  z-index: 0;
+}
