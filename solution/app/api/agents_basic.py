@@ -179,17 +179,15 @@ def list_agents_agent_view():
 
     normalized = [_normalize_agent(agent) for agent in filtered]
 
-    if not is_admin:
-        append_log(
-            f"Agent card list requested (IP: {client_ip or 'unknown'})",
-            ok=True,
-            capture_client_ip=True,
-            client_ip=client_ip,
-        )
+    append_log(
+        f"Agent card list requested (IP: {client_ip or 'unknown'})",
+        ok=True,
+        capture_client_ip=True,
+        client_ip=client_ip,
+    )
 
     resp = jsonify(normalized)
-    if not is_admin:
-        resp.headers["X-Client-IP"] = client_ip or ""
+    resp.headers["X-Client-IP"] = client_ip or ""
     return resp
 
 
@@ -251,17 +249,15 @@ def get_agent_agent_view(agent_id):
         ):
             return jsonify({"error": "FORBIDDEN", "message": "tenant mismatch"}), 403
 
-    if not is_admin:
-        append_log(
-            f"Agent card viewed: {agent_id} (IP: {client_ip or 'unknown'})",
-            ok=True,
-            capture_client_ip=True,
-            client_ip=client_ip,
-        )
+    append_log(
+        f"Agent card viewed: {agent_id} (IP: {client_ip or 'unknown'})",
+        ok=True,
+        capture_client_ip=True,
+        client_ip=client_ip,
+    )
 
     resp = jsonify(_normalize_agent(agent))
-    if not is_admin:
-        resp.headers["X-Client-IP"] = client_ip or ""
+    resp.headers["X-Client-IP"] = client_ip or ""
     return resp
 
 @api_bp.put('/agents/<path:agent_id>/policy')
