@@ -15,6 +15,14 @@ class TokenData(BaseModel):
 class User(BaseModel):
     email: str
     tenant: TenantValue
+    name: str | None = None
+    title: str | None = None
 
 class UserInDB(User):
     hashed_password: str
+
+
+class Tenant(BaseModel):
+    id: str
+    name: str
+    description: str | None = None

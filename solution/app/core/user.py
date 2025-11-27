@@ -11,9 +11,10 @@ import redis
 
 _FALLBACK_REDIS_URLS = (
     os.environ.get("JWT_REDIS_URL"),
-    "redis://host.docker.internal:6380/0",  # when jwt-server runs in sibling container
     os.environ.get("REDIS_URL"),
-    "redis://localhost:6379/0",
+    "redis://jwt-server:6380/0",  # when jwt-server runs in docker-compose
+    "redis://host.docker.internal:6381/0",  # when jwt-server runs in sibling container
+    "redis://localhost:6380/0",
 )
 
 
@@ -23,7 +24,7 @@ def _pick_redis_url(explicit_url: str | None = None) -> str:
     for url in _FALLBACK_REDIS_URLS:
         if url:
             return url
-    return "redis://localhost:6379/0"
+    return "redis://localhost:6380/0"
 
 
 def redis_client(redis_url: str | None = None) -> redis.Redis:

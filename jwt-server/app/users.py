@@ -13,16 +13,22 @@ DEFAULT_USER_CREDENTIALS = [
     {
         "email": "user2@example.com",
         "tenant": "logistics",
+        "name": "물류 오퍼레이터",
+        "title": "운영 매니저",
         "password": "password1234",
     },
     {
         "email": "user@example.com",
         "tenant": "customer-service",
+        "name": "고객 상담원",
+        "title": "CS 스페셜리스트",
         "password": "password123",
     },
     {
         "email": "admin@example.com",
         "tenant": ["logistics", "customer-service"],
+        "name": "관리자",
+        "title": "Admin",
         "password": "admin123",
     },
 ]
@@ -47,6 +53,8 @@ def _seed_default_users():
             mapping={
                 "email": user["email"],
                 "tenant": _serialize_tenant(user["tenant"]),
+                "name": user.get("name", ""),
+                "title": user.get("title", ""),
                 "hashed_password": hash_password(user["password"]),
             },
         )
@@ -74,6 +82,8 @@ def get_user(email: str):
     return UserInDB(
         email=user_data["email"],
         tenant=tenant_value,
+        name=user_data.get("name") or None,
+        title=user_data.get("title") or None,
         hashed_password=user_data["hashed_password"],
     )
 

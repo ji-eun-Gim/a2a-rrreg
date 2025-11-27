@@ -78,7 +78,7 @@ def create_app() -> Flask:
         # 최신 경로 → 레거시 경로 → 인덱스 순서로 반환
         candidates = [
             os.path.join(app.static_folder, 'rulesets', 'rulesets.html'),
-            os.path.join(app.static_folder, 'ruleset', 'ruleset.html'),
+            os.path.join(app.static_folder, 'ruleset', 'rulesets.html'),
         ]
         for target in candidates:
             if os.path.exists(target):

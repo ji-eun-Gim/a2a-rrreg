@@ -20,7 +20,7 @@
           <a href="/dashboard" class="nav-link">대시보드</a>
           <a href="/agents" class="nav-link">에이전트</a>
           <a href="/logs" class="nav-link">로그</a>
-          <a href="/rulesets" class="nav-link active">룰셋</a>
+          <a href="/rulesets/" class="nav-link active">룰셋</a>
         </nav>
       </header>
 
@@ -47,7 +47,7 @@
                 <div id="group-detail-content" class="hidden">
                   <div class="group-header">
                     <div class="group-info">
-                      <h2 id="selected-group-name">그룹 이름</h2>
+                      <h2 id="selected-group-name" >그룹 이름</h2>
                       <p id="selected-group-desc">그룹 설명</p>
                     </div>
                     <div class="group-actions">
@@ -278,18 +278,15 @@
 
         <div class="form-grid">
           <div class="form-group">
-            <label for="ruleset-id">정책 ID</label>
+            <label for="ruleset-name-display">룰셋 이름</label>
             <input
               type="text"
-              id="ruleset-id"
-              name="ruleset_id"
-              required
-              placeholder="unique_policy_id"
+              id="ruleset-name-display"
+              readonly
+              placeholder="자동 생성됨 (예: rule-1)"
             />
-          </div>
-          <div class="form-group">
-            <label for="ruleset-name">정책 이름</label>
-            <input type="text" id="ruleset-name" name="name" required />
+            <input type="hidden" id="ruleset-id" name="ruleset_id" required />
+            <input type="hidden" id="ruleset-name" name="name" required />
           </div>
 
           <div class="form-group hidden" id="type-select-container">

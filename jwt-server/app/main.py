@@ -1,7 +1,7 @@
 # 앱 진입점
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from . import users
+from . import users, tenants
 
 app = FastAPI(title="JWT Auth Server", version="1.0")
 
@@ -14,3 +14,4 @@ app.add_middleware(
 )
 
 app.include_router(users.router)
+app.include_router(tenants.router)

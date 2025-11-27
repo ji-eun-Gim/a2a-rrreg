@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
 
-from flask import jsonify, request
+from flask import jsonify, request, g
 
 from . import api_bp
 from ..core import repo
 from ..core.logging import append_log
+from ..core.auth import require_jwt
 
 _POLICY_LIST_KEYS = [
     "prompt_validation_rulesets",
@@ -100,9 +101,96 @@ def _find_agent_index(agent_id):
 @api_bp.get('/agents')
 def list_agents():
     """등록된 에이전트 목록을 반환."""
+    # JWT가 있을 때만 검증/필터; 없으면 전체 목록 반환
+    jwt_info = {}
+    client_ip = None
+    auth_header = request.headers.get("Authorization")
+    if auth_header:
+        auth_err = require_jwt()
+        if auth_err:
+            return auth_err
+        jwt_info = getattr(g, "jwt", {}) or {}
+        forwarded = request.headers.get("X-Forwarded-For")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else request.remote_addr
+        append_log(
+            f"Agent card list requested (IP: {client_ip or 'unknown'})",
+            ok=True,
+            capture_client_ip=True,
+            client_ip=client_ip,
+        )
+
+    is_admin = jwt_info.get("role") == "admin"
+    token_tenants = jwt_info.get("tenants") or []
+    allowed_tenants = {t.strip().lower() for t in token_tenants if isinstance(t, str)}
     agents = repo.load_agents()
-    normalized = [_normalize_agent(agent) for agent in agents]
-    return jsonify(normalized)
+    filtered = []
+    for agent in agents:
+        if not isinstance(agent, dict):
+            continue
+        if auth_header and not is_admin:
+            record_tenants = agent.get("tenants")
+            if not isinstance(record_tenants, list):
+                record_tenants = []
+            if not any(
+                isinstance(t, str) and t.strip().lower() in allowed_tenants
+                for t in record_tenants
+            ):
+                continue
+        filtered.append(agent)
+
+    normalized = [_normalize_agent(agent) for agent in filtered]
+
+    resp = jsonify(normalized)
+    if auth_header and client_ip:
+        resp.headers["X-Client-IP"] = client_ip
+    return resp
+
+
+@api_bp.get('/agents/agent-view')
+def list_agents_agent_view():
+    """에이전트 전용: JWT 필터 + 조회 로그 남김."""
+    auth_err = require_jwt()
+    if auth_err:
+        return auth_err
+
+    jwt_info = getattr(g, "jwt", {}) or {}
+    forwarded = request.headers.get("X-Forwarded-For")
+    client_ip = forwarded.split(",")[0].strip() if forwarded else request.remote_addr
+
+    is_admin = jwt_info.get("role") == "admin"
+    token_tenants = jwt_info.get("tenants") or []
+    allowed_tenants = {t.strip().lower() for t in token_tenants if isinstance(t, str)}
+
+    agents = repo.load_agents()
+    filtered = []
+    for agent in agents:
+        if not isinstance(agent, dict):
+            continue
+        if not is_admin:
+            record_tenants = agent.get("tenants")
+            if not isinstance(record_tenants, list):
+                record_tenants = []
+            if not any(
+                isinstance(t, str) and t.strip().lower() in allowed_tenants
+                for t in record_tenants
+            ):
+                continue
+        filtered.append(agent)
+
+    normalized = [_normalize_agent(agent) for agent in filtered]
+
+    if not is_admin:
+        append_log(
+            f"Agent card list requested (IP: {client_ip or 'unknown'})",
+            ok=True,
+            capture_client_ip=True,
+            client_ip=client_ip,
+        )
+
+    resp = jsonify(normalized)
+    if not is_admin:
+        resp.headers["X-Client-IP"] = client_ip or ""
+    return resp
 
 
 @api_bp.get('/agents/<path:agent_id>')
@@ -111,8 +199,70 @@ def get_agent(agent_id):
     index, agent, agents = _find_agent_index(agent_id)
     if agent is None:
         return jsonify({"error": 'agent not found'}), 404
-    return jsonify(_normalize_agent(agent))
 
+    # 에이전트(토큰 기반) 요청 시 모든 역할에 대해 조회 로그를 남긴다.
+    auth_header = request.headers.get("Authorization")
+    client_ip = None
+    if auth_header:
+        auth_err = require_jwt()
+        if auth_err:
+            return auth_err
+        forwarded = request.headers.get("X-Forwarded-For")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else request.remote_addr
+        append_log(
+            f"Agent card viewed: {agent_id} (IP: {client_ip or 'unknown'})",
+            ok=True,
+            capture_client_ip=True,
+            client_ip=client_ip,
+        )
+
+    resp = jsonify(_normalize_agent(agent))
+    if auth_header and client_ip:
+        resp.headers["X-Client-IP"] = client_ip
+    return resp
+
+
+@api_bp.get('/agents/agent-view/<path:agent_id>')
+def get_agent_agent_view(agent_id):
+    """에이전트 전용 단건 조회: JWT 필터 + 조회 로그 남김."""
+    auth_err = require_jwt()
+    if auth_err:
+        return auth_err
+
+    jwt_info = getattr(g, "jwt", {}) or {}
+    forwarded = request.headers.get("X-Forwarded-For")
+    client_ip = forwarded.split(",")[0].strip() if forwarded else request.remote_addr
+
+    is_admin = jwt_info.get("role") == "admin"
+    token_tenants = jwt_info.get("tenants") or []
+    allowed_tenants = {t.strip().lower() for t in token_tenants if isinstance(t, str)}
+
+    index, agent, agents = _find_agent_index(agent_id)
+    if agent is None:
+        return jsonify({"error": 'agent not found'}), 404
+
+    if not is_admin:
+        record_tenants = agent.get("tenants")
+        if not isinstance(record_tenants, list):
+            record_tenants = []
+        if not any(
+            isinstance(t, str) and t.strip().lower() in allowed_tenants
+            for t in record_tenants
+        ):
+            return jsonify({"error": "FORBIDDEN", "message": "tenant mismatch"}), 403
+
+    if not is_admin:
+        append_log(
+            f"Agent card viewed: {agent_id} (IP: {client_ip or 'unknown'})",
+            ok=True,
+            capture_client_ip=True,
+            client_ip=client_ip,
+        )
+
+    resp = jsonify(_normalize_agent(agent))
+    if not is_admin:
+        resp.headers["X-Client-IP"] = client_ip or ""
+    return resp
 
 @api_bp.put('/agents/<path:agent_id>/policy')
 def update_agent_policy(agent_id):

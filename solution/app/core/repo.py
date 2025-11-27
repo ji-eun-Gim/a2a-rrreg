@@ -7,8 +7,10 @@ _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 _AGENTS_DIR = os.path.join(_DATA_DIR, 'redisDB')
 AGENTS_FILE = os.path.join(_AGENTS_DIR, 'agents.json')
-LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
-RULESETS_FILE = os.path.join(_DATA_DIR, 'rulesets.json')
+LOG_FILE = os.path.join(_AGENTS_DIR, 'logs.json')
+RULESETS_FILE = os.path.join(_AGENTS_DIR, 'rulesets.json')
+_OLD_LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
+_OLD_RULESETS_FILE = os.path.join(_DATA_DIR, 'rulesets.json')
 
 DEFAULT_RULESETS = [
     {
@@ -75,11 +77,31 @@ def ensure_seed():
         with open(AGENTS_FILE, 'w', encoding='utf-8') as f:
             json.dump([], f, ensure_ascii=False, indent=2)
     if not os.path.exists(LOG_FILE):
-        with open(LOG_FILE, 'w', encoding='utf-8') as f:
-            f.write('[]')
+        try:
+            if os.path.exists(_OLD_LOG_FILE):
+                with open(_OLD_LOG_FILE, 'r', encoding='utf-8') as src:
+                    data = src.read()
+                with open(LOG_FILE, 'w', encoding='utf-8') as dst:
+                    dst.write(data)
+            else:
+                with open(LOG_FILE, 'w', encoding='utf-8') as f:
+                    f.write('[]')
+        except Exception:
+            with open(LOG_FILE, 'w', encoding='utf-8') as f:
+                f.write('[]')
     if not os.path.exists(RULESETS_FILE):
-        with open(RULESETS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(DEFAULT_RULESETS, f, ensure_ascii=False, indent=2)
+        try:
+            if os.path.exists(_OLD_RULESETS_FILE):
+                with open(_OLD_RULESETS_FILE, 'r', encoding='utf-8') as src:
+                    data = json.load(src)
+                with open(RULESETS_FILE, 'w', encoding='utf-8') as dst:
+                    json.dump(data, dst, ensure_ascii=False, indent=2)
+            else:
+                with open(RULESETS_FILE, 'w', encoding='utf-8') as f:
+                    json.dump(DEFAULT_RULESETS, f, ensure_ascii=False, indent=2)
+        except Exception:
+            with open(RULESETS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(DEFAULT_RULESETS, f, ensure_ascii=False, indent=2)
 
 
 def load_json(path: str, default):
