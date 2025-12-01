@@ -44,7 +44,7 @@ def _delete_agent_record(target_id: str):
         append_log('리소스 없음 : 요청한 에이전트를 찾을 수 없음 (404 Not Found)', False)
         return jsonify({"error": 'NOT_FOUND', "message": 'agent not found'}), 404
 
-    rec = agents[idx]
+    rec = agents.pop(idx)
     name = (rec.get('card') or {}).get('name') if isinstance(rec.get('card'), dict) else ''
 
     now_local = _now_utc9_iso()
@@ -55,8 +55,9 @@ def _delete_agent_record(target_id: str):
     rec['update_ts'] = now_local
     rec['delete_ts'] = now_local
 
-    agents[idx] = rec
+    # 실제 저장 목록에서는 삭제된 레코드를 제거
     repo.save_agents(agents)
+    # 성공 로그는 남겨 두어 감사 추적을 가능하게 함
     append_log(f"에이전트 삭제 성공 (200 OK): {name}", True)
     return jsonify({"agent": rec}), 200
 

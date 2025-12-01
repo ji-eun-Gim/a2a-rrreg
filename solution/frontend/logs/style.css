@@ -1,182 +1,551 @@
-.logs-grid {
-  display: grid;
-  gap: 1.5rem;
+/* ==========================================================================
+   1. [기존 스타일 유지] 메인 탭, 필터, 기본 입력창
+   (업로드해주신 파일의 스타일을 그대로 유지합니다)
+   ========================================================================== */
+
+/* 메인 탭 영역 */
+.main-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0px;
+  align-items: center;
 }
 
-@media (min-width: 1080px) {
-  .logs-grid {
-    grid-template-columns: 320px minmax(0, 1fr);
-    align-items: start;
-  }
+.main-tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 1.1rem;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
 }
 
-.filters {
+.main-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.main-tab-btn.active {
+  color: #fff;
+  border-bottom: 3px solid #65d1ff; /* [중요] 기존 활성 컬러 유지 */
+}
+
+.tab-spacer {
+  flex-grow: 1;
+}
+
+/* 필터 인라인 배치 */
+.filters-inline {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  padding: 15px;
+}
+
+/* 필터 래퍼: 가로 배치 & 줄바꿈 허용 */
+.filters-wrapper {
+  display: flex;
+  flex-wrap: wrap; /* 화면 좁으면 줄바꿈 */
+  gap: 20px;
+  align-items: flex-end; /* 라벨과 입력창 하단 정렬 */
+  padding: 5px 10px;
+}
+
+.filter-group {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 5px;
 }
 
-.btn-outlined {
+.filter-group label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+/* 어두운 테마용 입력창 공통 스타일 */
+.input-dark {
+  background-color: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: transparent;
-  color: inherit;
-  border-radius: var(--radius-sm);
-  font-size: 0.85rem;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  outline: none;
+  height: 38px;
 }
 
-.log-source-switch {
+.input-dark:focus {
+  border-color: #65d1ff; /* [중요] 기존 포인트 컬러 유지 */
+}
+
+/* 날짜 입력창 스타일 */
+.date-range {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
 }
 
-.log-source-switch .btn-outlined {
-  padding: 0.35rem 0.85rem;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 0.85rem;
+.date-range input {
+  width: 150px; /* 시간 포함되므로 너비 확보 */
+  text-align: center;
+}
+
+/* 검색창 늘리기 */
+.search-group {
+  flex-grow: 1; /* 남은 공간 모두 차지 */
+  min-width: 300px;
+}
+
+/* 검색창과 버튼이 붙어있는 행 */
+.search-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.search-row input {
+  width: 100%;
+}
+
+.search-row button {
+  height: 38px;
+  padding: 0 15px;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background-color: #334155;
+  color: white;
+  border-radius: 4px;
   cursor: pointer;
 }
-
-.log-source-switch .btn-outlined.active {
-  background: rgba(101, 209, 255, 0.15);
-  border-color: rgba(101, 209, 255, 0.6);
+.search-row button:hover {
+  background-color: #475569;
 }
 
-.filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
+/* 검색 버튼 강조 (포인트 컬러 적용) */
+#agent-search-btn {
+  background-color: #0ea5e9; /* 버튼은 가독성 위해 조금 진한 파랑 */
+  border-color: #0ea5e9;
+}
+#agent-search-btn:hover {
+  background-color: #0284c7;
 }
 
-.form-group {
+#agent-search-btn,
+#registry-search-btn {
+  background-color: #0ea5e9; /* 포인트 컬러 (파랑) */
+  border-color: #0ea5e9;
+}
+
+#agent-search-btn:hover,
+#registry-search-btn:hover {
+  background-color: #0284c7; /* 호버 시 조금 더 진한 파랑 */
+}
+
+/* ==========================================================================
+   2. [신규 기능 추가] 커스텀 드롭다운 스타일
+   (기존 .input-dark 스타일과 똑같이 생기도록 디자인)
+   ========================================================================== */
+
+.dropdown-wrapper {
+  position: relative;
+  width: 180px; /* 드롭다운 너비 */
+  user-select: none;
+}
+
+/* 버튼 모양을 기존 input-dark와 완벽하게 일치시킴 */
+.dropdown-btn {
+  background-color: #1e293b; /* .input-dark 배경색 */
+  border: 1px solid rgba(255, 255, 255, 0.2); /* .input-dark 테두리 */
+  color: #fff;
+  border-radius: 4px;
+  padding: 0 12px; /* 높이 38px 맞추기 위해 패딩 조정 */
+  font-size: 0.9rem;
+  cursor: pointer;
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
+  justify-content: space-between;
+  align-items: center;
+  height: 38px; /* 높이 통일 */
+  white-space: nowrap;
 }
 
-.log-table-wrapper {
-  max-height: clamp(320px, 70vh, 720px);
-  overflow: auto;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.dropdown-btn:hover {
+  border-color: #65d1ff; /* 호버 시 포인트 컬러 */
 }
 
+.dropdown-btn span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90%;
+}
+
+/* 화살표 아이콘 */
+.dropdown-btn::after {
+  content: "▼";
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-left: 8px;
+}
+
+/* 펼쳐지는 목록 */
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  background-color: #1e293b;
+  border: 1px solid #65d1ff; /* 펼쳐지면 파란 테두리 */
+  border-radius: 4px;
+  z-index: 1000;
+  margin-top: 4px;
+  display: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.dropdown-list.active {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* 체크박스 색상 - 포인트 컬러(#65d1ff) 적용 */
+.dropdown-item input[type="checkbox"] {
+  accent-color: #65d1ff;
+  cursor: pointer;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+/* 비활성화 상태 (툴 선택 전) */
+.dropdown-wrapper.disabled .dropdown-btn {
+  background-color: #334155;
+  color: #94a3b8;
+  cursor: not-allowed;
+  border-color: transparent;
+}
+
+/* ==========================================================================
+   3. [기존 스타일 유지] 테이블, 모달, 유틸리티
+   ========================================================================== */
+
+/* 테이블 스타일 */
 .log-table {
   width: 100%;
-  min-width: 100%;
   border-collapse: collapse;
+  margin-top: 5px;
+  font-size: 0.95rem;
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background-color: rgba(0, 0, 0, 0.2);
 }
 
 .log-table th,
 .log-table td {
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 14px 15px;
   text-align: left;
-  vertical-align: top;
-}
-
-.log-table th {
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.04);
-  position: sticky;
-  top: 0;
-  backdrop-filter: blur(12px);
-  z-index: 1;
-}
-
-.log-table tbody tr:hover {
-  background: rgba(101, 209, 255, 0.08);
-}
-
-.log-table .log-message {
-  max-width: 420px;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.log-table .log-actions {
-  text-align: right;
+/* 헤더 배경 */
+.log-table thead th {
+  background-color: rgba(255, 255, 255, 0.05);
+  text-align: center;
 }
 
-.btn-small {
-  padding: 0.4rem 0.8rem;
+/* 컬럼 정렬 */
+.col-time,
+.col-policy,
+.col-agent,
+.col-op,
+.col-actor,
+.col-method,
+.col-status,
+.col-stage {
+  text-align: center !important;
 }
 
+.text-right {
+  text-align: right !important;
+  padding-right: 20px;
+}
 
+/* 버튼 (상세) */
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ccc;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  color: #fff;
+  border-color: #fff;
+}
+.btn-secondary.small {
+  font-size: 0.85rem;
+}
+
+/* 뷰 전환 유틸리티 */
+.hidden {
+  display: none !important;
+}
+
+/* 스크롤바 커스텀 (Dark) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+/* Flatpickr 커스텀 (테마 매칭) */
+.flatpickr-calendar {
+  background: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+}
+.flatpickr-day.selected {
+  background: #65d1ff !important; /* 포인트 컬러 */
+  border-color: #65d1ff !important;
+}
+
+/* 모달 스타일 (기존 유지) */
 .modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(6, 12, 24, 0.7);
-  z-index: 1000;
-  display: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-
-.modal-overlay:not(.hidden) {
-  display: block;
-}
-
 .modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-surface);
-  border-radius: var(--radius-md);
-  padding: 1.25rem;
-  min-width: 320px;
-  width: min(760px, 92vw);
-  max-height: 82vh;
+  background: #1e293b;
+  width: 800px;
+  max-width: 90%;
+  max-height: 80vh;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  box-shadow: var(--shadow-lg);
-  resize: both;
-  overflow: hidden;
 }
-
-.modal.is-dragging {
-  cursor: grabbing;
-}
-
 .modal-header {
+  padding: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #fff;
+}
+.modal-content {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+  color: #ddd;
+}
+#modal-json {
+  white-space: pre-wrap;
+  font-family: monospace;
+}
+.modal-footer {
+  padding: 10px 20px;
+  text-align: right;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.widget-header-simple {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.75rem;
-  cursor: move;
-  user-select: none;
-  padding-bottom: 0.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 5px;
+}
+.count-badge {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #fff;
 }
 
-.modal-content {
-  flex: 1;
-  overflow: auto;
+/* 1. 캘린더 전체 박스: 둥글고 그림자 있게 */
+.flatpickr-calendar {
+  background: #1e293b !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  border-radius: 8px !important;
+  font-family: "Pretendard", sans-serif !important;
+  padding: 10px !important;
+
+  /* [수정] 아래쪽 잘림 방지를 위해 여유 공간 추가 */
+  padding-bottom: 20px !important;
+  height: auto !important; /* 높이를 내용에 맞게 자동 조절 */
+  width: auto !important;
 }
 
-.modal-content pre {
-  background: rgba(0, 0, 0, 0.32);
-  border-radius: var(--radius-sm);
-  padding: 0.85rem;
-  font-family: "Fira Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: #e9f1ff;
-  white-space: pre-wrap;
-  word-break: break-word;
+/* 상단 화살표 제거 (깔끔하게) */
+.flatpickr-calendar::before,
+.flatpickr-calendar::after {
+  display: none !important;
 }
 
-@media (max-width: 768px) {
-  .log-table-wrapper {
-    max-height: none;
-  }
+/* 2. 상단 헤더 (월/년) */
+.flatpickr-months {
+  background: transparent !important;
+  margin-bottom: 10px !important;
+}
+
+.flatpickr-current-month {
+  font-size: 1.1rem !important;
+  padding-top: 0 !important;
+}
+
+.flatpickr-current-month input.cur-year {
+  font-weight: 700 !important;
+}
+
+.flatpickr-monthDropdown-months {
+  font-weight: 700 !important;
+}
+
+/* 좌우 화살표 아이콘 */
+.flatpickr-prev-month,
+.flatpickr-next-month {
+  fill: #fff !important;
+  padding: 10px !important;
+}
+.flatpickr-prev-month:hover,
+.flatpickr-next-month:hover {
+  fill: #0ea5e9 !important; /* 호버 시 포인트 컬러 */
+}
+
+/* 3. 요일 (월, 화, 수...) */
+span.flatpickr-weekday {
+  background: transparent !important;
+  color: #94a3b8 !important; /* 보조 텍스트 색 */
+  font-weight: normal !important;
+}
+
+/* 4. 날짜 숫자들 */
+.flatpickr-day {
+  color: #e2e8f0 !important;
+  border-radius: 6px !important; /* 네모와 원 사이 (부드러운 사각형) */
+  border: none !important;
+  transition: all 0.2s !important;
+}
+
+/* 마우스 올렸을 때 */
+.flatpickr-day:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* [핵심] 선택된 날짜 (솔리드 컬러 채움) */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.inRange,
+.flatpickr-day.startRange.inRange,
+.flatpickr-day.endRange.inRange,
+.flatpickr-day.selected:focus,
+.flatpickr-day.startRange:focus,
+.flatpickr-day.endRange:focus,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover {
+  background: #0ea5e9 !important; /* 대시보드 포인트 컬러 (파랑) */
+  color: #fff !important;
+  border-color: #0ea5e9 !important;
+  font-weight: bold !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* 오늘 날짜 (선택 안됐을 때) */
+.flatpickr-day.today {
+  border: 1px solid #0ea5e9 !important;
+  color: #0ea5e9 !important;
+}
+.flatpickr-day.today:hover {
+  background: #0ea5e9 !important;
+  color: #fff !important;
+}
+
+/* 5. 시간 설정 (Time Picker) - 여기가 사진에서 가장 못생겼던 부분 */
+.flatpickr-time {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+  padding-top: 15px !important; /* 위쪽 간격 조금 더 줌 */
+  margin-top: 10px !important;
+  margin-bottom: 5px !important; /* 아래쪽 여유 */
+  max-height: none !important; /* 높이 제한 해제 */
+  overflow: visible !important; /* 내용이 넘쳐도 잘리지 않게 */
+  line-height: 40px !important; /* 높이 확보 */
+}
+
+/* 시간 입력 숫자 */
+.flatpickr-time input {
+  color: #fff !important;
+  font-size: 1rem !important;
+  font-weight: bold !important;
+  background: transparent !important; /* 배경 투명 */
+}
+
+/* 입력창 호버 시 배경 */
+.flatpickr-time input:hover,
+.flatpickr-time .flatpickr-am-pm:hover,
+.flatpickr-time input:focus,
+.flatpickr-time .flatpickr-am-pm:focus {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-radius: 4px !important;
+}
+
+/* 시간 구분자 (:) */
+.flatpickr-time .flatpickr-time-separator {
+  color: #94a3b8 !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+/* 시간 위아래 화살표 (기본 숨김 처리하거나 색상 변경) */
+.flatpickr-time .numInputWrapper span.arrowUp:after {
+  border-bottom-color: #fff !important;
+}
+.flatpickr-time .numInputWrapper span.arrowDown:after {
+  border-top-color: #fff !important;
 }

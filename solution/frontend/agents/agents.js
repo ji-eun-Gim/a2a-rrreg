@@ -416,7 +416,7 @@ async function deleteAgent(agent, triggerButton, statusElement) {
 
   if (!verifiedToken) {
     setAgentActionStatus(statusElement, '관리자 JWT를 먼저 확인해주세요.', true);
-    openAdminTokenModal();
+    openAdminTokenModal('delete');
     return;
   }
 
@@ -456,7 +456,10 @@ async function deleteAgent(agent, triggerButton, statusElement) {
   }
 }
 
-function openAdminTokenModal() {
+let tokenPurpose = null; // 'add' | 'delete' | null
+
+function openAdminTokenModal(purpose = 'add') {
+  tokenPurpose = purpose;
   const tokenModal = document.getElementById('token-modal');
   if (!tokenModal) return;
 
@@ -485,7 +488,7 @@ function setupAddAgentModal() {
   const tokenClose = document.getElementById('token-modal-close');
   const tokenForm = document.getElementById('token-form');
 
-  openButton?.addEventListener('click', () => openAdminTokenModal());
+  openButton?.addEventListener('click', () => openAdminTokenModal('add'));
 
   tokenClose?.addEventListener('click', () => {
     tokenModal?.classList.add('hidden');
@@ -647,7 +650,10 @@ async function verifyAdminToken(rawToken, tokenModal) {
     }
     verifiedToken = tokenValue;
     tokenModal?.classList.add('hidden');
-    showAddAgentModal();
+    if (tokenPurpose === 'add') {
+      showAddAgentModal();
+    }
+    tokenPurpose = null;
   } catch (error) {
     const status = tokenModal?.querySelector('#token-status');
     if (status) {

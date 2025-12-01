@@ -13,9 +13,57 @@ _ROOT_DIR = (
 )
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 _LOG_DIR = os.path.join(_DATA_DIR, 'redisDB')
-_LOG_FILE = os.path.join(_LOG_DIR, 'logs.json')
+# 에이전트 로그 전용 파일명 (레거시, 레지스트리 로그는 repo.append_registry_log 사용)
+_LOG_FILE = os.path.join(_LOG_DIR, 'a-logs.json')
 _OLD_LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
+_OLD_LOG_FILE_LEGACY = os.path.join(_LOG_DIR, 'logs.json')
 MAX_LOG_ENTRIES = int(os.environ.get("SOLUTION_MAX_LOG_ENTRIES", "500"))
+
+
+def _infer_fail_stage(message: str, ok: bool) -> str:
+    """메시지/상태를 기반으로 검증 단계를 추론."""
+    msg = (message or "").lower()
+    if ok:
+        return "Success"
+    if any(code in msg for code in ["401", "403", "token", "토큰", "authorization"]):
+        if "403" in msg or "권한" in msg:
+            return "토큰 권한 확인"
+        return "JWT 토큰 여부"
+    if any(code in msg for code in ["413", "422", "400", "498", "json", "스키마", "schema", "필수", "시그니처"]):
+        if "413" in msg or "바이트" in msg:
+            return "스키마 검증(전체 바이트)"
+        if "498" in msg or "signature" in msg or "시그니처" in msg:
+            return "스키마 검증(시그니처)"
+        return "스키마 검증"
+    if any(keyword in msg for keyword in ["정책", "policy", "도메인", "domain", "url", "중복", "duplicate", "409"]):
+        return "정책 검사"
+    if any(keyword in msg for keyword in ["extension", "노드 개수", "node", "422"]):
+        return "Extension 필드 검사"
+    return ""
+
+
+def _normalize_method(method: str | None):
+    crud_map = {'c': 'Create', 'r': 'Read', 'u': 'Update', 'd': 'Delete'}
+    if method is None:
+        return ''
+    key = str(method).strip().lower()
+    return crud_map.get(key, method)
+
+
+def _infer_method_from_message(message: str | None) -> str:
+    """메시지에서 CRUD 단축(c/r/u/d)을 추론."""
+    if not message:
+        return ''
+    msg = str(message).lower()
+    if any(k in msg for k in ["삭제", "delete", "remove"]):
+        return 'd'
+    if any(k in msg for k in ["수정", "update", "modify"]):
+        return 'u'
+    if any(k in msg for k in ["조회", "검색", "read", "list", "get"]):
+        return 'r'
+    if any(k in msg for k in ["등록", "추가", "생성", "create", "add"]):
+        return 'c'
+    return ''
 
 
 def _ensure_log_file():
@@ -23,6 +71,15 @@ def _ensure_log_file():
     os.makedirs(_LOG_DIR, exist_ok=True)
     if not os.path.exists(_LOG_FILE):
         # migrate from old location if present
+        if os.path.exists(_OLD_LOG_FILE_LEGACY):
+            try:
+                with open(_OLD_LOG_FILE_LEGACY, 'r', encoding='utf-8') as src:
+                    content = src.read()
+                with open(_LOG_FILE, 'w', encoding='utf-8') as dst:
+                    dst.write(content)
+                return
+            except Exception:
+                pass
         if os.path.exists(_OLD_LOG_FILE):
             try:
                 with open(_OLD_LOG_FILE, 'r', encoding='utf-8') as src:
@@ -71,21 +128,16 @@ def append_log(
     *,
     capture_client_ip: bool = False,
     client_ip: str | None = None,
+    fail_stage: str | None = None,
 ):
-    """플랫폼/공용 로그 파일에 추가."""
+    """플랫폼/공용 로그를 레지스트리 로그(r-logs.json)에 추가."""
     try:
-        _ensure_log_file()
         when = when or _now_kst()
         if when.tzinfo is None:
             try:
                 when = when.replace(tzinfo=ZoneInfo("Asia/Seoul"))
             except Exception:
                 pass
-        try:
-            with open(_LOG_FILE, 'r', encoding='utf-8') as f:
-                logs = json.load(f)
-        except Exception:
-            logs = []
         ip = client_ip or (_request_ip() if capture_client_ip else None)
         entry = {
             'message': str(message or ''),
@@ -95,11 +147,30 @@ def append_log(
         }
         if ip:
             entry['clientIp'] = ip
-        logs.insert(0, entry)
-        if isinstance(logs, list) and len(logs) > MAX_LOG_ENTRIES:
-            del logs[MAX_LOG_ENTRIES:]
-        with open(_LOG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(logs, f, ensure_ascii=False, indent=2)
+        # 공통 스키마 필드 보강 (요청자/동작/상태/검증단계/메시지)
+        try:
+            from flask import g  # type: ignore
+
+            actor = getattr(g, "jwt", {}).get("sub") if g else None
+        except Exception:
+            actor = None
+        entry['timestamp'] = entry.get('timeIso') or when.isoformat()
+        entry['actor'] = actor or ''
+        method_code = entry.get('method') or _infer_method_from_message(message)
+        entry['method'] = _normalize_method(method_code)
+        entry['status'] = 200 if ok else 500
+        stage = fail_stage or entry.get('fail_stage') or _infer_fail_stage(message, ok)
+        entry['fail_stage'] = stage
+        entry['source'] = 'registry'
+
+        # r-logs.json에 기록
+        try:
+            from . import repo  # type: ignore
+
+            repo.append_registry_log(entry)
+        except Exception:
+            # 로깅 실패가 주 흐름을 막지 않도록 함
+            pass
     except Exception:
         # 로깅 중 오류가 발생해도 앱 흐름은 유지
         pass

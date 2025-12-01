@@ -1,6 +1,6 @@
 import os
 
-from flask import Flask, send_from_directory
+from flask import Flask, redirect, send_from_directory
 
 from .core import repo
 
@@ -70,12 +70,10 @@ def create_app() -> Flask:
             return send_from_directory(os.path.dirname(target), os.path.basename(target))
         return send_from_directory(app.static_folder, 'index.html')
 
-    @app.get('/ruleset')
-    @app.get('/ruleset/')
     @app.get('/rulesets')
     @app.get('/rulesets/')
     def ruleset_page():
-        # 최신 경로 → 레거시 경로 → 인덱스 순서로 반환
+        # ?? ?? ?? ?? ?? ??? ??? ??
         candidates = [
             os.path.join(app.static_folder, 'rulesets', 'rulesets.html'),
             os.path.join(app.static_folder, 'ruleset', 'rulesets.html'),
@@ -84,6 +82,14 @@ def create_app() -> Flask:
             if os.path.exists(target):
                 return send_from_directory(os.path.dirname(target), os.path.basename(target))
         return send_from_directory(app.static_folder, 'index.html')
+
+    @app.get('/ruleset')
+    @app.get('/ruleset/')
+    @app.get('/rulsets')
+    @app.get('/rulsets/')
+    def ruleset_redirect():
+        return redirect('/rulesets')
+
 
     from .api import api_bp
 

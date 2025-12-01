@@ -1,16 +1,28 @@
 import copy
 import os
 import json
+from datetime import datetime, timezone
 
 # --- 프로젝트 루트의 solution/data 디렉터리 경로 ---
 _ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 _DATA_DIR = os.path.join(_ROOT_DIR, 'data')
 _AGENTS_DIR = os.path.join(_DATA_DIR, 'redisDB')
 AGENTS_FILE = os.path.join(_AGENTS_DIR, 'agents.json')
-LOG_FILE = os.path.join(_AGENTS_DIR, 'logs.json')
+# 개별 로그 파일 (에이전트/레지스트리 분리)
+AGENT_LOG_FILE = os.path.join(_AGENTS_DIR, 'a-logs.json')
+REGISTRY_LOG_FILE = os.path.join(_AGENTS_DIR, 'r-logs.json')
 RULESETS_FILE = os.path.join(_AGENTS_DIR, 'rulesets.json')
 _OLD_LOG_FILE = os.path.join(_DATA_DIR, 'log.json')
+_OLD_LOG_FILE_LEGACY = os.path.join(_AGENTS_DIR, 'logs.json')
 _OLD_RULESETS_FILE = os.path.join(_DATA_DIR, 'rulesets.json')
+REGISTRY_MAX_LOG_ENTRIES = int(os.environ.get('SOLUTION_MAX_LOG_ENTRIES', '500'))
+_CRUD_MAP = {'c': 'Create', 'r': 'Read', 'u': 'Update', 'd': 'Delete'}
+_CRUD_KEYWORDS = {
+    'c': ['create', '생성', '등록', '추가'],
+    'd': ['delete', 'remove', '삭제'],
+    'u': ['update', 'modify', '수정'],
+    'r': ['read', '조회', '검색', 'list', 'get'],
+}
 
 DEFAULT_RULESETS = [
     {
@@ -76,19 +88,29 @@ def ensure_seed():
     if not os.path.exists(AGENTS_FILE):
         with open(AGENTS_FILE, 'w', encoding='utf-8') as f:
             json.dump([], f, ensure_ascii=False, indent=2)
-    if not os.path.exists(LOG_FILE):
+    # 에이전트 로그 파일 초기화 (기존 위치에서 마이그레이션)
+    if not os.path.exists(AGENT_LOG_FILE):
         try:
-            if os.path.exists(_OLD_LOG_FILE):
+            if os.path.exists(_OLD_LOG_FILE_LEGACY):
+                with open(_OLD_LOG_FILE_LEGACY, 'r', encoding='utf-8') as src:
+                    data = src.read()
+                with open(AGENT_LOG_FILE, 'w', encoding='utf-8') as dst:
+                    dst.write(data)
+            elif os.path.exists(_OLD_LOG_FILE):
                 with open(_OLD_LOG_FILE, 'r', encoding='utf-8') as src:
                     data = src.read()
-                with open(LOG_FILE, 'w', encoding='utf-8') as dst:
+                with open(AGENT_LOG_FILE, 'w', encoding='utf-8') as dst:
                     dst.write(data)
             else:
-                with open(LOG_FILE, 'w', encoding='utf-8') as f:
+                with open(AGENT_LOG_FILE, 'w', encoding='utf-8') as f:
                     f.write('[]')
         except Exception:
-            with open(LOG_FILE, 'w', encoding='utf-8') as f:
+            with open(AGENT_LOG_FILE, 'w', encoding='utf-8') as f:
                 f.write('[]')
+    # 레지스트리 로그 파일 초기화
+    if not os.path.exists(REGISTRY_LOG_FILE):
+        with open(REGISTRY_LOG_FILE, 'w', encoding='utf-8') as f:
+            f.write('[]')
     if not os.path.exists(RULESETS_FILE):
         try:
             if os.path.exists(_OLD_RULESETS_FILE):
@@ -120,7 +142,10 @@ def save_json(path: str, data):
 
 def load_agents():
     ensure_seed()
-    return load_json(AGENTS_FILE, [])
+    data = load_json(AGENTS_FILE, [])
+    if isinstance(data, list):
+        data = [a for a in data if not (isinstance(a, dict) and a.get("status") == "Deleted")]
+    return data
 
 
 def save_agents(data):
@@ -128,12 +153,171 @@ def save_agents(data):
 
 
 def load_logs():
+    """기존 호환성용: 레지스트리 로그만 반환."""
     ensure_seed()
-    return load_json(LOG_FILE, [])
+    registry_logs = load_registry_logs()
+    return registry_logs
 
 
 def save_logs(data):
-    save_json(LOG_FILE, data)
+    """기존 호환성용: data를 AGENT 로그 파일에만 기록."""
+    save_agent_logs(data)
+
+
+def load_agent_logs():
+    """에이전트 로그 사용 중지: 항상 빈 배열 반환."""
+    ensure_seed()
+    return []
+
+
+def save_agent_logs(data):
+    """에이전트 로그 사용 중지: 기록하지 않음."""
+    return None
+
+
+def load_registry_logs():
+    ensure_seed()
+    raw = load_json(REGISTRY_LOG_FILE, [])
+    normalized = [_normalize_registry_log_entry(e) for e in raw if isinstance(e, dict)]
+    if normalized != raw:
+        save_json(REGISTRY_LOG_FILE, normalized)
+    return normalized
+
+
+def save_registry_logs(data):
+    normalized = []
+    for entry in data:
+        normalized.append(_normalize_registry_log_entry(entry))
+    save_json(REGISTRY_LOG_FILE, normalized)
+
+def _infer_method(entry: dict) -> str:
+    """method가 비어있을 때 메시지/동작 힌트로 CRUD 코드를 추론."""
+    def _from_text(text: str) -> str:
+        lower = text.lower()
+        for code, keywords in _CRUD_KEYWORDS.items():
+            if any(word in lower for word in keywords):
+                return code
+        return ''
+
+    texts: list[str] = []
+    for key in ('method', 'operation', 'op', 'action', 'message'):
+        val = entry.get(key)
+        if val:
+            texts.append(str(val))
+    extra = entry.get('extra')
+    if isinstance(extra, dict):
+        for key in ('method', 'operation', 'op', 'action', 'message'):
+            val = extra.get(key)
+            if val:
+                texts.append(str(val))
+    for t in texts:
+        code = _from_text(t)
+        if code:
+            return code
+    return ''
+
+
+def _normalize_registry_log_entry(entry: dict) -> dict:
+    """레지스트리 로그 필드를 UI가 기대하는 스키마로 정규화."""
+    if not isinstance(entry, dict):
+        return {}
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    except Exception:
+        now_iso = datetime.utcnow().isoformat() + 'Z'
+
+    raw_status = entry.get('status')
+    try:
+        status = int(raw_status)
+    except Exception:
+        status = raw_status if raw_status is not None else None
+
+    method_raw = (
+        entry.get('method')
+        or entry.get('operation')
+        or entry.get('op')
+        or _infer_method(entry)
+        or ''
+    )
+    method_norm = _CRUD_MAP.get(str(method_raw).strip().lower(), method_raw)
+    normalized = {
+        'timestamp': (
+            entry.get('timestamp')
+            or entry.get('timeIso')
+            or entry.get('time_iso')
+            or entry.get('time')
+            or now_iso
+        ),
+        'actor': str(entry.get('actor') or entry.get('user') or ''),
+        'method': str(method_norm),
+        'status': status,
+        'fail_stage': str(entry.get('fail_stage') or entry.get('stage') or ''),
+        'message': str(entry.get('message') or entry.get('detail') or ''),
+        'source': 'registry',
+    }
+    for key in ('tenant_id', 'group_id', 'client_ip', 'clientIp', 'ip'):
+        if key in entry and entry.get(key) is not None:
+            normalized[key] = entry.get(key)
+    if 'extra' in entry and entry.get('extra') is not None:
+        normalized['extra'] = entry.get('extra')
+    return normalized
+
+
+def _normalize_agent_log_entry(entry: dict) -> dict:
+    """에이전트/플랫폼 로그도 공통 스키마 필드를 보강한다."""
+    if not isinstance(entry, dict):
+        return {}
+    try:
+        now_iso = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+    except Exception:
+        now_iso = datetime.utcnow().isoformat() + 'Z'
+
+    raw_status = entry.get('status')
+    try:
+        status = int(raw_status)
+    except Exception:
+        # ok -> 200, False -> 500 정도의 기본값을 부여
+        if entry.get('ok') is True:
+            status = 200
+        elif entry.get('ok') is False:
+            status = 500
+        else:
+            status = None
+
+    normalized = dict(entry)
+    normalized['timestamp'] = (
+        entry.get('timestamp')
+        or entry.get('timeIso')
+        or entry.get('time_iso')
+        or entry.get('time')
+        or now_iso
+    )
+    normalized['actor'] = str(entry.get('actor') or entry.get('user') or '')
+    method_raw = (
+        entry.get('method')
+        or entry.get('policy')
+        or entry.get('action')
+        or _infer_method(entry)
+        or ''
+    )
+    normalized['method'] = str(_CRUD_MAP.get(str(method_raw).strip().lower(), method_raw))
+    normalized['status'] = status
+    normalized['fail_stage'] = str(entry.get('fail_stage') or entry.get('stage') or '')
+    normalized['message'] = str(entry.get('message') or entry.get('detail') or '')
+    normalized['source'] = entry.get('source') or 'agent'
+    return normalized
+
+
+def append_registry_log(entry: dict):
+    """data/redisDB/r-logs.json에 스키마를 맞춰 append."""
+    normalized = _normalize_registry_log_entry(entry)
+    if not normalized:
+        return
+    logs = load_registry_logs()
+    logs.insert(0, normalized)
+    if isinstance(logs, list) and len(logs) > REGISTRY_MAX_LOG_ENTRIES:
+        del logs[REGISTRY_MAX_LOG_ENTRIES:]
+    save_registry_logs(logs)
 
 
 def load_rulesets():

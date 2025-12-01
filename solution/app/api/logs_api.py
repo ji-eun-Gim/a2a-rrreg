@@ -33,6 +33,11 @@ def _normalize_log_entry(entry):
         'plugin': plugin,
         'client_ip': entry.get('clientIp') or entry.get('client_ip') or entry.get('ip'),
         'source': source,
+        # registry-specific fields
+        'actor': entry.get('actor') or entry.get('user') or '',
+        'method': entry.get('method') or entry.get('operation') or entry.get('op') or '',
+        'status': entry.get('status'),
+        'fail_stage': entry.get('fail_stage') or entry.get('stage') or '',
         'extra': entry,
     }
 
@@ -73,14 +78,21 @@ def append_log_entry():
     if not message:
         return jsonify({"error": 'message is required'}), 400
 
-    ok = bool(body.get('ok'))
+    source = (body.get('source') or 'agent').lower()
     time_iso = body.get('timeIso') if isinstance(body.get('timeIso'), str) else None
     time_text = body.get('timeText') if isinstance(body.get('timeText'), str) else ''
 
-    logs = repo.load_logs()
-    entry = {"message": message, "ok": ok, "timeIso": time_iso, "timeText": time_text}
-    logs.insert(0, entry)
-    repo.save_logs(logs)
+    entry = dict(body)
+    entry['message'] = message
+    entry['source'] = 'registry' if source == 'registry' else 'agent'
+    entry['timeIso'] = time_iso
+    entry['timeText'] = time_text
+
+    try:
+        # 모든 로그를 r-logs.json에 기록
+        repo.append_registry_log(entry)
+    except Exception:
+        return jsonify({"error": "failed to append log"}), 500
     return jsonify({"log": entry}), 201
 
 
