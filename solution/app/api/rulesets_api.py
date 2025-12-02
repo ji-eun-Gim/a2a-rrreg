@@ -7,7 +7,7 @@ import urllib.request
 from datetime import datetime, timezone
 from typing import Any
 
-from flask import jsonify, request, g
+from flask import jsonify, request, g, Response
 
 from . import api_bp
 from ..core import repo
@@ -62,6 +62,34 @@ def _append_registry_log(
         # Logging failures should not block API flow
         pass
 
+
+def _extract_tools_from_card(card: dict | None) -> list[str]:
+    """카드 확장/스킬 정보에서 tool_id 목록을 추출."""
+    if not isinstance(card, dict):
+        return []
+    tools: set[str] = set()
+    extensions = card.get("extensions")
+    if isinstance(extensions, list):
+        for ext in extensions:
+            if not isinstance(ext, dict):
+                continue
+            params = ext.get("params")
+            if isinstance(params, dict):
+                ext_tools = params.get("tools")
+                if isinstance(ext_tools, list):
+                    for t in ext_tools:
+                        if isinstance(t, dict):
+                            tool_id = t.get("tool_id") or t.get("id")
+                            if isinstance(tool_id, str) and tool_id:
+                                tools.add(tool_id)
+    skills = card.get("skills")
+    if isinstance(skills, list):
+        for skill in skills:
+            if isinstance(skill, dict):
+                skill_id = skill.get("id")
+                if isinstance(skill_id, str) and skill_id:
+                    tools.add(skill_id)
+    return sorted(tools)
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -630,3 +658,98 @@ def list_agent_tools(agent_id: str):
         return jsonify({"error": "agent not found"}), 404
     tool_ids = tools_helper._extract_tool_ids(agent)
     return jsonify({"agent_id": agent_id, "tools": tool_ids})
+
+
+@api_bp.get('/rulesets/allowed-template')
+def get_allowed_template():
+    """allowed_list 형태로 에이전트-툴 허용 목록을 반환한다."""
+    author = request.args.get("author") or "security manager"
+    tenant = request.args.get("tenant") or ""
+
+    agents = repo.load_agents()
+    allowed_list: list[dict] = []
+    for agent in agents:
+        if not isinstance(agent, dict):
+            continue
+        agent_id = agent.get("agent_id")
+        card = agent.get("card")
+        tools = _extract_tools_from_card(card)
+        if agent_id and tools:
+            allowed_list.append(
+                {
+                    "agent_id": agent_id,
+                    "allowed_tools": tools,
+                }
+            )
+
+    payload = {
+        "template": "custom",
+        "author": author,
+        "tenant": tenant,
+        "allowed_list": allowed_list,
+    }
+    return jsonify(payload)
+
+
+@api_bp.get('/rulesets/tenant-template')
+def get_tenant_allowed_template():
+    """
+    Tenants 서비스의 rulesets 응답(access_controls)을 변환해 allowed_list를 반환.
+
+    - tenant 쿼리 필수
+    - author 쿼리 선택(기본: security manager)
+    - 기본적으로 action == 'deny' 인 룰도 포함(그룹 접근 허용 목록 관점으로 모두 수집)
+    """
+    tenant_id = (request.args.get("tenant") or "").strip()
+    if not tenant_id:
+        return jsonify({"error": "tenant is required"}), 400
+    author = request.args.get("author") or "security manager"
+    include_deny = True
+
+    try:
+        payload = _tenant_fetch_json(f"/tenants/{tenant_id}/rulesets")
+    except Exception as e:
+        return jsonify({"error": "failed to fetch tenant rulesets", "detail": str(e)}), 502
+
+    access_controls = []
+    if isinstance(payload, dict):
+        ac = payload.get("access_controls")
+        if isinstance(ac, list):
+            access_controls = ac
+
+    # Preserve the incoming order while de-duplicating per agent
+    allowed_map: dict[str, list[str]] = {}
+    for rule in access_controls:
+        if not isinstance(rule, dict):
+            continue
+        if rule.get("type") != "tool_validation":
+            continue
+        if not rule.get("enabled", True):
+            continue
+        agent_id = rule.get("target_agent")
+        tool_name = rule.get("tool_name")
+        if not (isinstance(agent_id, str) and isinstance(tool_name, str) and agent_id and tool_name):
+            continue
+        action = ""
+        rules_block = rule.get("rules")
+        if isinstance(rules_block, dict):
+            action = str(rules_block.get("action") or "").strip().lower()
+        if action == "deny" and not include_deny:
+            continue
+        if agent_id not in allowed_map:
+            allowed_map[agent_id] = []
+        if tool_name not in allowed_map[agent_id]:
+            allowed_map[agent_id].append(tool_name)
+
+    allowed_list = [
+        {"agent_id": agent, "allowed_tools": tools} for agent, tools in allowed_map.items()
+    ]
+
+    payload = {
+        "template": "custom",
+        "author": author,
+        "tenant": tenant_id,
+        "allowed_list": allowed_list,
+    }
+    # Keep key order as declared above (Flask's JSON_SORT_KEYS defaults to True)
+    return Response(json.dumps(payload, ensure_ascii=False), mimetype="application/json")

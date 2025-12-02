@@ -1,11 +1,17 @@
 // rulesets.js - API 연동 (모달 UI 유지)
 
 const API_BASE = window.location.origin;
+let verifiedToken = null;
+let pendingAction = null;
 
 async function fetchJson(url, options = {}) {
   const res = await fetch(url, {
     ...options,
-    headers: { ...(options.headers || {}), Accept: "application/json" },
+    headers: {
+      ...(options.headers || {}),
+      ...(verifiedToken ? { Authorization: verifiedToken } : {}),
+      Accept: "application/json",
+    },
   });
   if (!res.ok) {
     let msg = `Request failed (${res.status})`;
@@ -30,10 +36,79 @@ let allUsers = [];
 let selectedUsersForAdd = [];
 let allTenants = [];
 
+function requireAdminToken(nextAction) {
+  if (verifiedToken) {
+    if (typeof nextAction === "function") nextAction();
+    return;
+  }
+  pendingAction = nextAction;
+  openTokenModal();
+}
+
+function openTokenModal() {
+  const modal = document.getElementById("token-modal");
+  if (!modal) {
+    // Fallback: simple prompt when modal markup is unavailable
+    const raw = window.prompt("관리자 JWT를 입력하세요 (Bearer ...)", "");
+    if (raw) verifyAdminToken(raw);
+    return;
+  }
+  openModal("token-modal");
+  const input = modal.querySelector("#token-input");
+  const status = modal.querySelector("#token-status");
+  if (status) {
+    status.textContent = "";
+    status.classList.remove("error");
+  }
+  if (input) {
+    input.value = "";
+    input.focus();
+    if (typeof input.select === "function") input.select();
+  }
+}
+
+function closeTokenModal() {
+  closeModal("token-modal");
+}
+
+async function verifyAdminToken(rawToken) {
+  const modal = document.getElementById("token-modal");
+  const status = modal?.querySelector("#token-status");
+  const tokenValue = rawToken.toLowerCase().startsWith("bearer ")
+    ? rawToken
+    : `Bearer ${rawToken}`;
+
+  try {
+    const res = await fetch(`${API_BASE}/api/verify-admin`, {
+      method: "GET",
+      headers: { Authorization: tokenValue },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "관리자 토큰이 유효하지 않습니다.");
+    }
+    verifiedToken = tokenValue;
+    closeTokenModal();
+    if (typeof pendingAction === "function") {
+      const action = pendingAction;
+      pendingAction = null;
+      action();
+    }
+  } catch (error) {
+    if (status) {
+      status.textContent = error.message || "토큰 인증에 실패했습니다.";
+      status.classList.add("error");
+    } else {
+      alert(error.message || "토큰 인증에 실패했습니다.");
+    }
+  }
+}
+
 // --- Initialization ---
 window.addEventListener("DOMContentLoaded", async () => {
   try {
     initModalEvents();
+    initTokenModal();
     initGroupActions();
     await refreshAll();
   } catch (error) {
@@ -96,9 +171,42 @@ function initModalEvents() {
   });
 }
 
+function initTokenModal() {
+  const modal = document.getElementById("token-modal");
+  const closeBtn = document.getElementById("token-modal-close");
+  const cancelBtn = document.getElementById("token-form-cancel");
+  const form = document.getElementById("token-form");
+
+  closeBtn?.addEventListener("click", () => closeTokenModal());
+  cancelBtn?.addEventListener("click", () => closeTokenModal());
+  modal?.addEventListener("click", (e) => {
+    if (e.target === modal) closeTokenModal();
+  });
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = form.querySelector("#token-input");
+    const status = form.querySelector("#token-status");
+    if (!input || !input.value.trim()) {
+      if (status) {
+        status.textContent = "토큰을 입력해주세요.";
+        status.classList.add("error");
+      }
+      return;
+    }
+    if (status) {
+      status.textContent = "토큰 검증 중...";
+      status.classList.remove("error");
+    }
+    await verifyAdminToken(input.value.trim());
+  });
+}
+
 function initGroupActions() {
   const btnAddGroup = document.getElementById("btn-add-group");
-  if (btnAddGroup) btnAddGroup.addEventListener("click", () => openGroupModal());
+  if (btnAddGroup)
+    btnAddGroup.addEventListener("click", () =>
+      requireAdminToken(() => openGroupModal())
+    );
 
   const btnEditGroup = document.getElementById("btn-edit-group");
   if (btnEditGroup) {
@@ -111,6 +219,10 @@ function initGroupActions() {
   const btnDeleteGroup = document.getElementById("btn-delete-group");
   if (btnDeleteGroup) {
     btnDeleteGroup.addEventListener("click", async () => {
+      if (!verifiedToken) {
+        requireAdminToken(() => btnDeleteGroup.click());
+        return;
+      }
       const group = allGroups.find((g) => g.id === selectedGroupId);
       if (!group || !group.tenant_id) {
         alert("선택된 그룹이나 테넌트 정보가 없습니다.");
@@ -184,6 +296,10 @@ function initGroupActions() {
   if (groupForm) {
     groupForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (!verifiedToken) {
+        requireAdminToken(() => groupForm.requestSubmit());
+        return;
+      }
       const groupId = document.getElementById("group-edit-id").value.trim();
       const name = document.getElementById("group-name").value.trim();
       const description = document.getElementById("group-desc").value.trim();
@@ -525,7 +641,7 @@ function openRulesetForm(rule = null, context = {}) {
   // Group scope
   if (scope === "group") {
     document.getElementById("ruleset-modal-title").textContent =
-      "그룹 접근 제한 설정";
+      "그룹 접근 허용 설정";
 
     const fieldsToHide = [
       "#type-select-container",
