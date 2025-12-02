@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -271,6 +272,17 @@ def _find_tenant_for_group(group_id: str) -> str | None:
             return group.get("tenant_id")
     return None
 
+
+
+
+
+def _short_agent_id(agent_id: str) -> str:
+    """Return a shortened, human-readable agent id."""
+    if not isinstance(agent_id, str):
+        return ""
+    short = agent_id.rsplit(":", 1)[-1]
+    short = re.sub(r"\.v\d.*$", "", short)
+    return short or agent_id
 
 def _get_tenant_rule(ruleset_id: str) -> tuple[str | None, dict | None]:
     """Return (tenant_id, rule) pair for the given ruleset_id from tenant API."""
@@ -727,6 +739,7 @@ def get_tenant_allowed_template():
         if not rule.get("enabled", True):
             continue
         agent_id = rule.get("target_agent")
+        agent_display = _short_agent_id(agent_id)
         tool_field = rule.get("tool_name")
         tools_field = rule.get("tool_names")
         tools: list[str] = []
@@ -743,14 +756,16 @@ def get_tenant_allowed_template():
             action = str(rules_block.get("action") or "").strip().lower()
         if action == "deny" and not include_deny:
             continue
-        if agent_id not in allowed_map:
-            allowed_map[agent_id] = []
+        key = agent_display or agent_id
+        if key not in allowed_map:
+            allowed_map[key] = []
         for tool_name in tools:
-            if tool_name not in allowed_map[agent_id]:
-                allowed_map[agent_id].append(tool_name)
+            if tool_name not in allowed_map[key]:
+                allowed_map[key].append(tool_name)
 
     allowed_list = [
-        {"agent_id": agent, "allowed_tools": tools} for agent, tools in allowed_map.items()
+        {"agent_id": agent, "allowed_tools": tools}
+        for agent, tools in allowed_map.items()
     ]
 
     payload = {
@@ -761,3 +776,10 @@ def get_tenant_allowed_template():
     }
     # Keep key order as declared above (Flask's JSON_SORT_KEYS defaults to True)
     return Response(json.dumps(payload, ensure_ascii=False), mimetype="application/json")
+def _short_agent_id(agent_id: str) -> str:
+    """Return a shortened, human-readable agent id."""
+    if not isinstance(agent_id, str):
+        return ""
+    short = agent_id.rsplit(":", 1)[-1]
+    short = re.sub(r"\.v\d.*$", "", short)
+    return short or agent_id
