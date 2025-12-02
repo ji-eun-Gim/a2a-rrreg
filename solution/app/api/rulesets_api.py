@@ -727,8 +727,15 @@ def get_tenant_allowed_template():
         if not rule.get("enabled", True):
             continue
         agent_id = rule.get("target_agent")
-        tool_name = rule.get("tool_name")
-        if not (isinstance(agent_id, str) and isinstance(tool_name, str) and agent_id and tool_name):
+        tool_field = rule.get("tool_name")
+        tools_field = rule.get("tool_names")
+        tools: list[str] = []
+        if isinstance(tools_field, list):
+            tools = [t for t in tools_field if isinstance(t, str) and t.strip()]
+        elif isinstance(tool_field, str) and tool_field.strip():
+            parts = [p.strip() for p in tool_field.split(",") if p.strip()]
+            tools = parts if parts else [tool_field.strip()]
+        if not (isinstance(agent_id, str) and agent_id and tools):
             continue
         action = ""
         rules_block = rule.get("rules")
@@ -738,8 +745,9 @@ def get_tenant_allowed_template():
             continue
         if agent_id not in allowed_map:
             allowed_map[agent_id] = []
-        if tool_name not in allowed_map[agent_id]:
-            allowed_map[agent_id].append(tool_name)
+        for tool_name in tools:
+            if tool_name not in allowed_map[agent_id]:
+                allowed_map[agent_id].append(tool_name)
 
     allowed_list = [
         {"agent_id": agent, "allowed_tools": tools} for agent, tools in allowed_map.items()

@@ -1,4 +1,4 @@
-/* 기본 변수 설정 */
+﻿/* 기본 변수 설정 */
 :root {
   --bg-dark: #060c18;
   --bg-surface: #0f172a;
@@ -326,43 +326,6 @@
   color: #fca5a5;
 }
 
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
-  display: none;
-}
-.modal-overlay.active {
-  display: block;
-}
-
-.modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: #1e293b;
-  border: 1px solid var(--border-surface);
-  border-radius: 8px;
-  padding: 1.5rem;
-  width: 500px;
-  max-width: 90vw;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--border-surface);
-  padding-bottom: 1rem;
-}
-
 .form-group {
   margin-bottom: 1rem;
   display: flex;
@@ -576,3 +539,139 @@
 .user-select-table tbody tr {
   z-index: 0;
 }
+
+/* --- 멀티 셀렉트 드롭다운 스타일 --- */
+.multi-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.multi-select-header {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-surface);
+  padding: 0.6rem;
+  border-radius: 4px;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 42px;
+}
+
+.multi-select-header:hover {
+  border-color: var(--primary);
+}
+
+.multi-select-header .placeholder {
+  color: var(--text-secondary);
+}
+
+.multi-select-dropdown {
+  position: absolute;
+  top: 105%;
+  left: 0;
+  right: 0;
+  background: #1e293b;
+  border: 1px solid var(--border-surface);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 100;
+  display: none;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.multi-select-dropdown.show {
+  display: block;
+}
+
+.multi-select-option {
+  padding: 0.5rem 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.2s;
+}
+
+.multi-select-option:last-child {
+  border-bottom: none;
+}
+
+.multi-select-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.multi-select-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.multi-select-option label {
+  cursor: pointer;
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-overlay.active {
+  display: flex;
+}
+.modal {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 1.5rem;
+  width: 500px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1rem;
+}
+.modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.05rem;
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.modal-form input,
+.modal-form textarea {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  padding: 0.65rem;
+  border-radius: 6px;
+}
+.modal-form .form-actions {
+  justify-content: flex-end;
+}
+

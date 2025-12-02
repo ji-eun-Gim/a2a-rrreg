@@ -73,7 +73,6 @@ def create_app() -> Flask:
     @app.get('/rulesets')
     @app.get('/rulesets/')
     def ruleset_page():
-        # ?? ?? ?? ?? ?? ??? ??? ??
         candidates = [
             os.path.join(app.static_folder, 'rulesets', 'rulesets.html'),
             os.path.join(app.static_folder, 'ruleset', 'rulesets.html'),

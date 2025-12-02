@@ -1,4 +1,4 @@
-// rulesets.js - API 연동 (모달 UI 유지)
+// rulesets.js - API 연동 + JWT 모달 + 멀티툴 선택
 
 const API_BASE = window.location.origin;
 let verifiedToken = null;
@@ -35,6 +35,19 @@ let allAgents = [];
 let allUsers = [];
 let selectedUsersForAdd = [];
 let allTenants = [];
+let currentSelectedTools = [];
+
+function generateNextRuleId() {
+  const prefix = "rule-";
+  const numbers = new Set();
+  allRulesets.forEach((r) => {
+    const m = String(r?.ruleset_id || "").toLowerCase().match(/^rule-(\d+)$/);
+    if (m) numbers.add(Number(m[1]));
+  });
+  let n = 1;
+  while (numbers.has(n)) n += 1;
+  return `${prefix}${n}`;
+}
 
 function requireAdminToken(nextAction) {
   if (verifiedToken) {
@@ -48,7 +61,6 @@ function requireAdminToken(nextAction) {
 function openTokenModal() {
   const modal = document.getElementById("token-modal");
   if (!modal) {
-    // Fallback: simple prompt when modal markup is unavailable
     const raw = window.prompt("관리자 JWT를 입력하세요 (Bearer ...)", "");
     if (raw) verifyAdminToken(raw);
     return;
@@ -111,6 +123,14 @@ window.addEventListener("DOMContentLoaded", async () => {
     initTokenModal();
     initGroupActions();
     await refreshAll();
+
+    document.addEventListener("click", (e) => {
+      const wrapper = document.getElementById("target-tool-multiselect");
+      if (wrapper && !wrapper.contains(e.target)) {
+        const list = document.getElementById("tool-multiselect-list");
+        if (list) list.classList.remove("show");
+      }
+    });
   } catch (error) {
     console.error("Initialization failed:", error);
   }
@@ -127,7 +147,6 @@ async function refreshAll() {
     try {
       allAgents = await fetchJson(`${API_BASE}/api/agents`);
     } catch (err) {
-      console.warn("Failed to load agents", err);
       allAgents = [];
     }
 
@@ -218,37 +237,43 @@ function initGroupActions() {
 
   const btnDeleteGroup = document.getElementById("btn-delete-group");
   if (btnDeleteGroup) {
-    btnDeleteGroup.addEventListener("click", async () => {
+    btnDeleteGroup.addEventListener("click", () => {
       if (!verifiedToken) {
         requireAdminToken(() => btnDeleteGroup.click());
         return;
       }
       const group = allGroups.find((g) => g.id === selectedGroupId);
       if (!group || !group.tenant_id) {
-        alert("선택된 그룹이나 테넌트 정보가 없습니다.");
+        alert("선택한 그룹이나 테넌트 정보가 없습니다.");
         return;
       }
-      if (!confirm("이 그룹을 삭제하시겠습니까?")) return;
-      try {
-        await fetchJson(
-          `${API_BASE}/api/rulesets/groups/${group.tenant_id}/${group.id}`,
-          { method: "DELETE" }
-        );
-        selectedGroupId = null;
-        await refreshAll();
-      } catch (err) {
-        console.error(err);
-        alert(`그룹 삭제에 실패했습니다: ${err.message}`);
-      }
+      if (!confirm("해당 그룹을 삭제하시겠습니까?")) return;
+      fetchJson(
+        `${API_BASE}/api/rulesets/groups/${group.tenant_id}/${group.id}`,
+        { method: "DELETE" }
+      )
+        .then(async () => {
+          selectedGroupId = null;
+          await refreshAll();
+        })
+        .catch((err) => alert(`그룹 삭제에 실패했습니다: ${err.message}`));
     });
   }
 
+  const btnCancelGroup = document.getElementById("btn-cancel-group");
+  if (btnCancelGroup) {
+    btnCancelGroup.addEventListener("click", () => closeModal("group-modal"));
+  }
+
   const btnAddMember = document.getElementById("btn-add-member");
-  if (btnAddMember) btnAddMember.addEventListener("click", () => openMemberModal());
+  if (btnAddMember)
+    btnAddMember.addEventListener("click", () => openMemberModal());
 
   const searchInput = document.getElementById("user-search-input");
   if (searchInput) {
-    searchInput.addEventListener("input", (e) => renderUserList(e.target.value));
+    searchInput.addEventListener("input", (e) =>
+      renderUserList(e.target.value)
+    );
   }
 
   const btnCancelMember = document.getElementById("btn-cancel-member");
@@ -261,8 +286,8 @@ function initGroupActions() {
     btnConfirmAddMember.addEventListener("click", async () => {
       if (selectedUsersForAdd.length > 0 && selectedGroupId) {
         const group = allGroups.find((g) => g.id === selectedGroupId);
-        if (!group || !group.tenant_id) {
-          alert("그룹의 tenant 정보가 없습니다.");
+        if (!group) {
+          alert("그룹 정보 오류");
           return;
         }
 
@@ -285,7 +310,6 @@ function initGroupActions() {
           document.getElementById("btn-confirm-add-member").disabled = true;
           await refreshAll();
         } catch (err) {
-          console.error(err);
           alert(`멤버 추가에 실패했습니다: ${err.message}`);
         }
       }
@@ -310,12 +334,7 @@ function initGroupActions() {
       }
 
       if (groupId) {
-        // update
         const group = allGroups.find((g) => g.id === groupId);
-        if (!group || !group.tenant_id) {
-          alert("그룹 또는 테넌트 정보를 찾을 수 없습니다.");
-          return;
-        }
         try {
           await fetchJson(
             `${API_BASE}/api/rulesets/groups/${group.tenant_id}/${group.id}`,
@@ -329,7 +348,6 @@ function initGroupActions() {
           await refreshAll();
           selectGroup(group.id);
         } catch (err) {
-          console.error(err);
           alert("그룹 수정에 실패했습니다.");
         }
         return;
@@ -337,10 +355,11 @@ function initGroupActions() {
 
       const tenantId = slugify(name);
       if (!tenantId) {
-        alert("그룹 이름에서 유효한 ID를 만들 수 없습니다.");
+        alert("유효하지 않은 그룹 이름");
         return;
       }
-      const newId = slugify(name) || `g_${Date.now().toString(36)}`;
+      const newId = `g_${Date.now().toString(36)}`;
+
       try {
         const created = await fetchJson(`${API_BASE}/api/rulesets/groups`, {
           method: "POST",
@@ -357,7 +376,6 @@ function initGroupActions() {
         await refreshAll();
         if (created?.id) selectGroup(created.id);
       } catch (err) {
-        console.error(err);
         alert(`그룹 생성에 실패했습니다: ${err.message}`);
       }
     });
@@ -377,27 +395,25 @@ function initGroupActions() {
 }
 
 // --- Modal Functions ---
-
 function openGroupModal(group = null) {
   const modal = document.getElementById("group-modal");
   const title = document.getElementById("group-modal-title");
   const form = document.getElementById("group-form");
 
   if (!modal || !title || !form) return;
-
   form.reset();
 
-    if (group) {
-      title.textContent = "그룹 수정";
-      document.getElementById("group-edit-id").value = group.id;
-      document.getElementById("group-name").value = group.name;
-      document.getElementById("group-desc").value = group.description || "";
-    } else {
-      title.textContent = "새 그룹 생성";
-      document.getElementById("group-edit-id").value = "";
-    }
-    openModal("group-modal");
+  if (group) {
+    title.textContent = "그룹 수정";
+    document.getElementById("group-edit-id").value = group.id;
+    document.getElementById("group-name").value = group.name;
+    document.getElementById("group-desc").value = group.description || "";
+  } else {
+    title.textContent = "새 그룹 생성";
+    document.getElementById("group-edit-id").value = "";
   }
+  openModal("group-modal");
+}
 
 function openMemberModal() {
   selectedUsersForAdd = [];
@@ -409,7 +425,6 @@ function openMemberModal() {
 }
 
 // --- Render Functions ---
-
 function renderGroupList() {
   const list = document.getElementById("group-list");
   if (!list) return;
@@ -436,7 +451,6 @@ function renderGroupDetail(groupId) {
   document.getElementById("selected-group-desc").textContent =
     group.description || "";
 
-  // Members Table
   const memberTbody = document.getElementById("group-member-table-body");
   memberTbody.innerHTML = "";
   const memberTemplate = document.getElementById("member-row-template");
@@ -449,7 +463,6 @@ function renderGroupDetail(groupId) {
     members.forEach((member) => {
       const email = typeof member === "string" ? member : member.email;
       const user = allUsers.find((u) => u.email === email);
-
       const row = memberTemplate.content.cloneNode(true);
 
       if (user) {
@@ -462,15 +475,12 @@ function renderGroupDetail(groupId) {
         row.querySelector(".member-title").textContent = "-";
         row.querySelector(".member-email").textContent = email || "-";
       }
-
       row.querySelector("button").onclick = () =>
         removeMember(group.id, email, group.tenant_id);
-
       memberTbody.appendChild(row);
     });
   }
 
-  // Group Rules Table
   const tbody = document.getElementById("group-rules-body");
   tbody.innerHTML = "";
   const rules = allRulesets.filter((r) => r.group_id === groupId);
@@ -485,9 +495,20 @@ function renderGroupDetail(groupId) {
       row.querySelector(".ruleset-name").textContent = r.name;
 
       let desc = r.description;
-      if (!desc && r.target_agent && r.tool_name) {
+      if (!desc && r.target_agent) {
+        let toolDisplay = "";
+        if (r.tool_names && Array.isArray(r.tool_names) && r.tool_names.length) {
+          toolDisplay =
+            r.tool_names.length === 1
+              ? r.tool_names[0]
+              : `${r.tool_names.length}개 Tool`;
+        } else if (r.tool_name) {
+          toolDisplay = r.tool_name;
+        } else {
+          toolDisplay = "모든 Tool";
+        }
         const action = r.rules?.action === "deny" ? "차단" : "검증";
-        desc = `${r.target_agent}의 ${r.tool_name} 사용 ${action}`;
+        desc = `${r.target_agent}의 ${toolDisplay} 사용 ${action}`;
       }
       row.querySelector(".ruleset-desc").textContent = desc || "-";
 
@@ -513,7 +534,6 @@ function renderGroupDetail(groupId) {
           );
           refreshAll();
         } catch (err) {
-          console.error(err);
           alert("상태 변경에 실패했습니다.");
         }
       };
@@ -522,11 +542,7 @@ function renderGroupDetail(groupId) {
       row
         .querySelector('[data-action="edit"]')
         .addEventListener("click", () =>
-          openRulesetForm(r, {
-            scope: "group",
-            groupId,
-            tenantId: r.tenant_id,
-          })
+          openRulesetForm(r, { scope: "group", groupId, tenantId: r.tenant_id })
         );
       row
         .querySelector('[data-action="delete"]')
@@ -539,7 +555,6 @@ function renderGroupDetail(groupId) {
               );
               refreshAll();
             } catch (err) {
-              console.error(err);
               alert("삭제에 실패했습니다.");
             }
           }
@@ -578,14 +593,10 @@ function renderUserList(keyword = "") {
   filteredUsers.forEach((user) => {
     const tr = document.createElement("tr");
     tr.className = "user-select-row";
-
-    const isSelected = selectedUsersForAdd.includes(user.email);
-    if (isSelected) tr.classList.add("selected");
+    if (selectedUsersForAdd.includes(user.email)) tr.classList.add("selected");
 
     tr.innerHTML = `
-      <td style="text-align: center;">
-        <div class="radio-indicator"></div>
-      </td>
+      <td style="text-align: center;"><div class="radio-indicator"></div></td>
       <td class="font-medium" style="text-align: center;">${
         user.name || user.email
       }</td>
@@ -598,7 +609,6 @@ function renderUserList(keyword = "") {
     tr.onclick = () => {
       const email = user.email;
       const index = selectedUsersForAdd.indexOf(email);
-
       if (index > -1) {
         selectedUsersForAdd.splice(index, 1);
         tr.classList.remove("selected");
@@ -606,19 +616,17 @@ function renderUserList(keyword = "") {
         selectedUsersForAdd.push(email);
         tr.classList.add("selected");
       }
-
       const count = selectedUsersForAdd.length;
       document.getElementById("btn-confirm-add-member").disabled = count === 0;
       document.getElementById(
         "selected-user-count"
       ).textContent = `${count}명 선택됨`;
     };
-
     tbody.appendChild(tr);
   });
 }
 
-// --- Unified Form Logic ---
+// --- Unified Form Logic (multi-tool) ---
 function openRulesetForm(rule = null, context = {}) {
   const body = document.getElementById("ruleset-modal-body");
   const template = document.getElementById("ruleset-form-template");
@@ -630,15 +638,27 @@ function openRulesetForm(rule = null, context = {}) {
   const { scope, groupId, tenantId } = context;
   const groupMeta = allGroups.find((g) => g.id === groupId);
 
-  applyAutoGeneratedName(form, rule);
-  form.querySelector("#ruleset-group-id").value = groupId || "";
-  const tenantInput = form.querySelector("#ruleset-tenant-id");
-  if (tenantInput) {
-    tenantInput.value =
-      tenantId || rule?.tenant_id || groupMeta?.tenant_id || "";
+  // 기본 ID/이름 자동 채우기
+  const idInput = form.querySelector("#ruleset-id");
+  const nameInput = form.querySelector("#ruleset-name");
+  if (!rule && idInput && nameInput) {
+    const nextId = generateNextRuleId();
+    idInput.value = nextId;
+    nameInput.value = nextId;
+  } else if (rule) {
+    if (idInput) {
+      idInput.value = rule.ruleset_id;
+      idInput.disabled = true;
+    }
+    if (nameInput) nameInput.value = rule.ruleset_id || rule.name || "";
   }
 
-  // Group scope
+  form.querySelector("#ruleset-group-id").value = groupId || "";
+  const tenantInput = form.querySelector("#ruleset-tenant-id");
+  if (tenantInput)
+    tenantInput.value =
+      tenantId || rule?.tenant_id || groupMeta?.tenant_id || "";
+
   if (scope === "group") {
     document.getElementById("ruleset-modal-title").textContent =
       "그룹 접근 허용 설정";
@@ -658,10 +678,11 @@ function openRulesetForm(rule = null, context = {}) {
     if (targetSection) targetSection.classList.remove("hidden");
 
     const agentSelect = form.querySelector("#target-agent-select");
-    const toolSelect = form.querySelector("#target-tool-select");
+    const multiSelectHeader = form.querySelector("#tool-multiselect-header");
+    const multiSelectList = form.querySelector("#tool-multiselect-list");
     const toolManual = form.querySelector("#ruleset-tool-name");
 
-    agentSelect.innerHTML = '<option value="">에이전트 선택...</option>';
+    agentSelect.innerHTML = '<option value="">Select agent...</option>';
     allAgents.forEach((a) => {
       const opt = document.createElement("option");
       opt.value = a.agent_id || a.id;
@@ -669,65 +690,120 @@ function openRulesetForm(rule = null, context = {}) {
       agentSelect.appendChild(opt);
     });
 
-    async function populateTools(aid) {
-      toolSelect.innerHTML = '<option value="">툴 선택...</option>';
-      toolSelect.disabled = true;
-      if (toolManual) toolManual.value = "";
+    currentSelectedTools = [];
 
-      if (!aid) return;
+    async function populateToolsMulti(aid, preSelected = []) {
+      multiSelectHeader.querySelector(".placeholder").textContent = "Loading...";
+      multiSelectList.innerHTML = "";
+      currentSelectedTools = [];
+
+      if (!aid) {
+        multiSelectHeader.querySelector(".placeholder").textContent =
+          "Select an agent first";
+        return;
+      }
+
       try {
         const resp = await fetchJson(
           `${API_BASE}/api/rulesets/agents/${encodeURIComponent(aid)}/tools`
         );
         const tools = Array.isArray(resp.tools) ? resp.tools : [];
         if (tools.length === 0) {
-          toolSelect.innerHTML =
-            '<option value="">등록된 Tool이 없습니다</option>';
-          toolSelect.disabled = true;
+          multiSelectHeader.querySelector(".placeholder").textContent =
+            "No tools available";
           if (toolManual) toolManual.classList.remove("hidden");
           return;
         }
-        toolSelect.innerHTML = '<option value="">Tool 선택...</option>';
-        tools.forEach((tid) => {
-          const opt = document.createElement("option");
-          opt.value = tid;
-          opt.textContent = tid;
-          toolSelect.appendChild(opt);
-        });
-        toolSelect.disabled = false;
+
         if (toolManual) toolManual.classList.add("hidden");
+        multiSelectHeader.querySelector(".placeholder").textContent =
+          "Select tools...";
+
+        tools.forEach((tid) => {
+          const optionDiv = document.createElement("div");
+          optionDiv.className = "multi-select-option";
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.value = tid;
+          checkbox.id = `chk-tool-${tid}`;
+
+          if (preSelected.includes(tid)) {
+            checkbox.checked = true;
+            currentSelectedTools.push(tid);
+          }
+
+          const label = document.createElement("label");
+          label.htmlFor = `chk-tool-${tid}`;
+          label.textContent = tid;
+
+          const toggleSelection = () => {
+            if (checkbox.checked) {
+              if (!currentSelectedTools.includes(tid)) currentSelectedTools.push(tid);
+            } else {
+              currentSelectedTools = currentSelectedTools.filter((t) => t !== tid);
+            }
+            updateHeader();
+          };
+
+          checkbox.addEventListener("change", toggleSelection);
+          optionDiv.addEventListener("click", (e) => {
+            if (e.target !== checkbox && e.target !== label) {
+              checkbox.checked = !checkbox.checked;
+              toggleSelection();
+            }
+          });
+
+          optionDiv.appendChild(checkbox);
+          optionDiv.appendChild(label);
+          multiSelectList.appendChild(optionDiv);
+        });
+
+        updateHeader();
       } catch (err) {
         console.warn("tool list fetch failed", err);
-        toolSelect.innerHTML =
-          '<option value="">툴 목록을 불러오지 못했습니다</option>';
-        toolSelect.disabled = true;
+        multiSelectHeader.querySelector(".placeholder").textContent =
+          "Failed to load tools";
         if (toolManual) toolManual.classList.remove("hidden");
       }
     }
 
-    agentSelect.addEventListener("change", (e) => {
-      populateTools(e.target.value);
+    function updateHeader() {
+      const span = multiSelectHeader.querySelector(".placeholder");
+      if (currentSelectedTools.length === 0) {
+        span.textContent = "Select tools... (0)";
+        span.style.color = "var(--text-secondary)";
+      } else {
+        span.textContent = `${currentSelectedTools.length} selected: ${currentSelectedTools
+          .slice(0, 2)
+          .join(", ")}${currentSelectedTools.length > 2 ? "..." : ""}`;
+        span.style.color = "#fff";
+      }
+    }
+
+    multiSelectHeader.addEventListener("click", () => {
+      multiSelectList.classList.toggle("show");
     });
 
-    // Populate for edit
+    agentSelect.addEventListener("change", (e) => {
+      populateToolsMulti(e.target.value);
+    });
+
     if (rule && rule.target_agent) {
       agentSelect.value = rule.target_agent;
-      populateTools(rule.target_agent).then(() => {
-        if (rule.tool_name) {
-          toolSelect.value = rule.tool_name;
-          if (!toolSelect.value && toolManual) {
-            toolManual.value = rule.tool_name;
-            toolManual.classList.remove("hidden");
-          }
-        }
-      });
+      let initialTools = [];
+      if (rule.tool_names && Array.isArray(rule.tool_names)) {
+        initialTools = rule.tool_names;
+      } else if (rule.tool_name) {
+        initialTools = [rule.tool_name];
+      }
+      populateToolsMulti(rule.target_agent, initialTools);
     }
 
     const typeInput = form.querySelector('[name="type"]');
     if (typeInput) typeInput.value = "tool_validation";
   }
 
-  // Fill Basic Info
   if (rule) {
     const descriptionInput = form.querySelector('[name="description"]');
     if (descriptionInput) descriptionInput.value = rule.description || "";
@@ -738,9 +814,15 @@ function openRulesetForm(rule = null, context = {}) {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    applyAutoGeneratedName(form, rule);
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
+    if (data.ruleset_id) {
+      data.ruleset_id = data.ruleset_id.trim();
+      data.name = data.ruleset_id;
+    } else if (!rule) {
+      data.ruleset_id = generateNextRuleId();
+      data.name = data.ruleset_id;
+    }
 
     if (scope === "group") {
       data.enabled = true;
@@ -754,13 +836,11 @@ function openRulesetForm(rule = null, context = {}) {
         "";
 
       data.target_agent = form.querySelector("#target-agent-select").value;
-      data.tool_name =
-        form.querySelector("#target-tool-select").value ||
-        form.querySelector("#ruleset-tool-name")?.value ||
-        "";
+      data.tool_names = currentSelectedTools;
+      data.tool_name = currentSelectedTools.join(",");
 
-      if (!data.target_agent || !data.tool_name) {
-        alert("대상 에이전트와 Tool을 선택하거나 입력해주세요.");
+      if (!data.target_agent || !currentSelectedTools.length) {
+        alert("대상 에이전트와 최소 1개 Tool을 선택해주세요.");
         return;
       }
     }
@@ -785,17 +865,14 @@ function openRulesetForm(rule = null, context = {}) {
       closeModal("ruleset-modal");
       refreshAll();
     } catch (err) {
-      console.error(err);
       alert("정책 저장에 실패했습니다.");
     }
   });
 
   body.appendChild(node);
-
   const cancelBtn = body.querySelector("#btn-cancel-ruleset");
-  if (cancelBtn) {
+  if (cancelBtn)
     cancelBtn.addEventListener("click", () => closeModal("ruleset-modal"));
-  }
 
   openModal("ruleset-modal");
 }
@@ -803,27 +880,17 @@ function openRulesetForm(rule = null, context = {}) {
 // --- Utils ---
 function removeMember(groupId, email, tenantId) {
   if (!confirm("이 멤버를 그룹에서 제거하시겠습니까?")) return;
-  if (!tenantId) {
-    alert("그룹의 tenant 정보가 없습니다.");
-    return;
-  }
-  const remaining = (allGroups.find((g) => g.id === groupId)?.members || [])
-    .map((m) => (typeof m === "string" ? m : m.email))
-    .filter((addr) => addr !== email);
-
-  fetchJson(
-    `${API_BASE}/api/rulesets/groups/${tenantId}/${groupId}/members`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ members: remaining }),
-    }
-  )
+  fetchJson(`${API_BASE}/api/rulesets/groups/${tenantId}/${groupId}/members`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      members: (allGroups.find((g) => g.id === groupId)?.members || [])
+        .map((m) => (typeof m === "string" ? m : m.email))
+        .filter((addr) => addr !== email),
+    }),
+  })
     .then(() => refreshAll())
-    .catch((err) => {
-      console.error(err);
-      alert("멤버 삭제에 실패했습니다.");
-    });
+    .catch(() => alert("멤버 삭제 실패"));
 }
 
 function openModal(id) {
@@ -840,15 +907,6 @@ function closeModal(id) {
     el.classList.remove("active");
   }
 }
-function getTypeLabel(t) {
-  const m = {
-    prompt_validation: "프롬프트 검증",
-    tool_validation: "Tool 제어",
-    response_filtering: "응답 필터링",
-  };
-  return m[t] || t;
-}
-
 function slugify(name) {
   return name
     .toLowerCase()
@@ -856,34 +914,4 @@ function slugify(name) {
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");
-}
-
-function applyAutoGeneratedName(form, rule) {
-  const nameInput = form.querySelector("#ruleset-name");
-  const idInput = form.querySelector("#ruleset-id");
-  const displayInput = form.querySelector("#ruleset-name-display");
-
-  const baseName =
-    (rule?.name || rule?.ruleset_id || "").trim() ||
-    generateNextRulesetName();
-  const rulesetId = (rule?.ruleset_id || "").trim() || baseName;
-
-  if (displayInput) displayInput.value = baseName;
-  if (nameInput) nameInput.value = baseName;
-  if (idInput) idInput.value = rulesetId;
-}
-
-function generateNextRulesetName() {
-  const prefix = "rule-";
-  const usedNumbers = new Set();
-
-  allRulesets.forEach((r) => {
-    const label = String(r?.name || r?.ruleset_id || "").toLowerCase();
-    const match = label.match(/^rule-(\d+)$/);
-    if (match) usedNumbers.add(Number(match[1]));
-  });
-
-  let candidate = 1;
-  while (usedNumbers.has(candidate)) candidate += 1;
-  return `${prefix}${candidate}`;
 }
